@@ -2,7 +2,11 @@
 
 Python library for **National Running Club Database (NRCD)** performance standardization (cross country, track, road). Implements the formulas documented in the NRCD resource paper.
 
-**Repository:** [github.com/National-Running-Club-Database/nrcd](https://github.com/National-Running-Club-Database/nrcd)
+[![GitHub](https://img.shields.io/badge/GitHub-National--Running--Club--Database%2Fnrcd-181717?logo=github)](https://github.com/National-Running-Club-Database/nrcd)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue?logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![PyPI](https://img.shields.io/badge/PyPI-nrcd-3775A9?logo=pypi&logoColor=white)](https://pypi.org/project/nrcd/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://github.com/National-Running-Club-Database/nrcd/actions/workflows/ci.yml/badge.svg)](https://github.com/National-Running-Club-Database/nrcd/actions/workflows/ci.yml)
 
 Use this to **standardize your own race results** — no NRCD dataset download required.
 
@@ -103,14 +107,14 @@ std = standardize_road(
 
 ### More examples
 
-Runnable scripts in `[examples/](examples/)`:
+Runnable scripts in [examples/](examples/):
 
 
 |       | Script                                                                                                                                                                                          |
 | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| XC    | `[xc_examples.py](examples/xc_examples.py)`, `[compare_improvement.py](examples/compare_improvement.py)`, `[standardize_one_result.py](examples/standardize_one_result.py)`                     |
-| Track | `[track_outdoor_examples.py](examples/track_outdoor_examples.py)`, `[track_indoor_examples.py](examples/track_indoor_examples.py)`, `[track_compare_meets.py](examples/track_compare_meets.py)` |
-| Both  | `[race_context_example.py](examples/race_context_example.py)`, `[load_dataset_example.py](examples/load_dataset_example.py)`                                                                    |
+| XC    | [xc_examples.py](examples/xc_examples.py), [compare_improvement.py](examples/compare_improvement.py), [standardize_one_result.py](examples/standardize_one_result.py) |
+| Track | [track_outdoor_examples.py](examples/track_outdoor_examples.py), [track_indoor_examples.py](examples/track_indoor_examples.py), [track_compare_meets.py](examples/track_compare_meets.py) |
+| Both  | [race_context_example.py](examples/race_context_example.py), [load_dataset_example.py](examples/load_dataset_example.py) |
 
 
 `load_dataset_example.py` exits with code 1 if Zenodo CSVs are not in `data/` — that is expected without the optional dataset.
@@ -153,8 +157,8 @@ pip install -e ".[dev,apis]"
 Standardization does **not** need API keys. Use enrichment only when backfilling **weather** or **meet altitude** from city/state.
 
 1. `pip install "nrcd[apis]"`
-2. [OpenWeather](https://home.openweathermap.org/users/sign_up) → [API keys](https://home.openweathermap.org/api_keys) → set `NRCD_OPENWEATHER_API_KEY`
-3. For **weather** at a race date/time, also [TimeZoneDB](https://timezonedb.com/register) → `NRCD_TIMEZONE_API_KEY`
+2. [![OpenWeather](https://img.shields.io/badge/OpenWeather-sign%20up-EE7023?logo=openweathermap)](https://home.openweathermap.org/users/sign_up) → [![API keys](https://img.shields.io/badge/OpenWeather-API%20keys-EE7023?logo=openweathermap)](https://home.openweathermap.org/api_keys) → set `NRCD_OPENWEATHER_API_KEY`
+3. For **weather** at a race date/time, also [![TimeZoneDB](https://img.shields.io/badge/TimeZoneDB-register-0066CC)](https://timezonedb.com/register) → `NRCD_TIMEZONE_API_KEY`
 4. **Meet altitude** uses free USGS EPQS (no key) after OpenWeather geocodes the city
 
 ```bash
@@ -164,7 +168,7 @@ export NRCD_TIMEZONE_API_KEY="your_key"   # weather only
 
 **Live tests (optional):** copy `local_api_keys.env.example` → `local_api_keys.env` (gitignored), add your OpenWeather key, then `pytest -m live_api -v`. AQI history starts **2020-11-27**; default test date is **2024-10-12**.
 
-**Full walkthrough:** [`docs/API_KEYS.md`](docs/API_KEYS.md). In Python: `from nrcd.enrich import API_GUIDE; print(API_GUIDE)`.
+**Full walkthrough:** [![API keys guide](https://img.shields.io/badge/docs-API__KEYS-0366d6?logo=readthedocs)](docs/API_KEYS.md). In Python: `from nrcd.enrich import API_GUIDE; print(API_GUIDE)`.
 
 Historical OpenWeather timemachine weather may require a **paid** OpenWeather plan; geocoding + USGS altitude often work on the free tier.
 
@@ -179,7 +183,7 @@ Historical OpenWeather timemachine weather may require a **paid** OpenWeather pl
 | `examples/load_dataset_example.py` only | **Yes** (optional)  |
 
 
-Optional public export: **[https://zenodo.org/records/17917357](https://zenodo.org/records/17917357)** (see `[data/README.md](data/README.md)`).
+Optional public export: [![Zenodo dataset](https://img.shields.io/badge/Zenodo-NRCD%20dataset-1682D4?logo=zenodo)](https://zenodo.org/records/17917357) (see [![data/README.md](https://img.shields.io/badge/data-README-lightgrey)](data/README.md)).
 
 ## API
 
@@ -268,7 +272,7 @@ Full parameter tables: `from nrcd import PARAMETERS_DOC` or `help(nrcd.standardi
 
 | Name                                                                  | Description                                                               |
 | --------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `API_GUIDE`                                                           | Full signup guide (text); see also `[docs/API_KEYS.md](docs/API_KEYS.md)` |
+| `API_GUIDE`                                                           | Full signup guide (text); see also [![API keys guide](https://img.shields.io/badge/docs-API__KEYS-0366d6?logo=readthedocs)](docs/API_KEYS.md) |
 | `EnrichConfig`                                                        | Throttle intervals, cache TTL, API keys                                   |
 | `api_keys_from_env`                                                   | Load keys from environment                                                |
 | `fetch_weather`                                                       | Temperature, dew point, humidity, AQI for city/state + date               |
@@ -286,11 +290,12 @@ Full parameter tables: `from nrcd import PARAMETERS_DOC` or `help(nrcd.standardi
 > Jonathan A. Karr Jr, Ryan M. Fryer, Ben Darden, Nicholas Pell, Kayla Ambrose, Evan Hall, Ramzi K. Bualuan, and Nitesh V. Chawla.  
 > arXiv preprint (forthcoming).
 
-Dataset (if using Zenodo export): [https://zenodo.org/records/17917357](https://zenodo.org/records/17917357)
+Dataset (if using Zenodo export): [![Zenodo dataset](https://img.shields.io/badge/Zenodo-NRCD%20dataset-1682D4?logo=zenodo)](https://zenodo.org/records/17917357)
 
 ## Author
 
-**Jonathan Karr** — [ORCID](https://orcid.org/0009-0000-1600-6122) · [jkarr@nd.edu](mailto:jkarr@nd.edu)
+[![Jonathan Karr ORCID](https://img.shields.io/badge/Jonathan%20Karr-ORCID-a6ce39?logo=orcid)](https://orcid.org/0009-0000-1600-6122)
+[![Email](https://img.shields.io/badge/jkarr%40nd.edu-Email-D14836?logo=gmail)](mailto:jkarr@nd.edu)
 
 ## Development
 
@@ -298,6 +303,6 @@ Dataset (if using Zenodo export): [https://zenodo.org/records/17917357](https://
 pytest
 ```
 
-See `[CHANGELOG.md](CHANGELOG.md)`. Package version: `src/nrcd/__init__.py` (`__version__`).
+See [![Changelog](https://img.shields.io/badge/Changelog-CHANGELOG.md-blue)](CHANGELOG.md). Package version: [![src/nrcd/__init__.py](https://img.shields.io/badge/version-src%2Fnrcd%2F__init__.py-lightgrey)](src/nrcd/__init__.py) (`__version__`).
 
-MIT — see `[LICENSE](LICENSE)`.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
