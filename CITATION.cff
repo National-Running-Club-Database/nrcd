@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+title: "nrcd: NRCD performance standardization library"
+message: "If you use this software or the NRCD standardization formulas, please cite the paper."
+type: software
+version: 0.1.0
+date-released: 2026-06-06
+license: MIT
+repository-code: "https://github.com/National-Running-Club-Database/nrcd"
+url: "https://github.com/National-Running-Club-Database/nrcd"
+authors:
+  - family-names: Karr
+    given-names: Jonathan A.
+    name-particle: Jr
+  - family-names: Fryer
+    given-names: Ryan M.
+  - family-names: Darden
+    given-names: Ben
+  - family-names: Pell
+    given-names: Nicholas
+  - family-names: Ambrose
+    given-names: Kayla
+  - family-names: Hall
+    given-names: Evan
+  - family-names: Bualuan
+    given-names: Ramzi K.
+  - family-names: Chawla
+    given-names: Nitesh V.
+preferred-citation:
+  type: article
+  title: "NRCD: An Open Database of Collegiate Running with Unified Performance Standardization"
+  year: 2026
+  notes: "arXiv preprint forthcoming"
+identifiers:
+  - type: url
+    value: "https://zenodo.org/records/17917357"
+    description: "NRCD dataset export (optional)"

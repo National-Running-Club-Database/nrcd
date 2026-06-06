@@ -1,0 +1,25 @@
+# Dataset (download from Zenodo; see data/README.md)
+data/*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.env
+local_api_keys.env
+.venv
+venv/
+ENV/
+dist/
+build/
+*.egg-info/
+
+# Test / tooling
+.pytest_cache/
+.mypy_cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
