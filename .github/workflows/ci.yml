@@ -37,6 +37,6 @@ jobs:
             examples/standardize_one_result.py; do
             python "$script"
           done
-          python examples/load_dataset_example.py; test $? -eq 1
+          # load_dataset_example.py requires optional Zenodo CSVs (pip install "nrcd[data]")
       - name: Build wheel
         run: pip install build && python -m build
