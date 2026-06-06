@@ -1,6 +1,6 @@
 # nrcd
 
-Python library for **National Running Club Database (NRCD)** performance standardization (cross country, track, road). Implements the formulas documented in the NRCD resource paper.
+Python library for **[National Running Club Database (NRCD)](https://github.com/National-Running-Club-Database/nrcd)** performance standardization (cross country, track, road race). Implements the formulas documented in the NRCD resource paper.
 
 [![GitHub](https://img.shields.io/badge/GitHub-National--Running--Club--Database%2Fnrcd-181717?logo=github)](https://github.com/National-Running-Club-Database/nrcd)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue?logo=python&logoColor=white)](https://www.python.org/downloads/)
