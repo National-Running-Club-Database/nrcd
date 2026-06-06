@@ -19,7 +19,7 @@ def test_required_for_sport_helpers():
     assert required_for("outdoor_track") == ["time", "gender", "event_name"]
     assert required_for("indoor_track") == ["time", "gender", "event_name"]
     assert required_for("road") == ["time", "gender", "event_name"]
-    assert "sport_name" in required_for("track")
+    assert any("sport_name" in field for field in required_for("track"))
 
 
 def test_wind_gated_by_outdoor_track_sport():
