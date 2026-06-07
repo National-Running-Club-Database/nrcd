@@ -27,8 +27,8 @@ from nrcd.enrich.batch import EnrichJob, JobResult, run_enrich_jobs
 from nrcd.enrich.cache import cache_stats, clear_enrich_cache
 from nrcd.enrich.config import EnrichConfig, api_keys_from_env
 from nrcd.enrich.context import enrich_race_context, enrich_race_context_result
-from nrcd.enrich.guide import API_GUIDE
 from nrcd.enrich.geocode import build_geocode_query, geocode_location, geocode_us_city_state
+from nrcd.enrich.guide import API_GUIDE
 from nrcd.enrich.weather import WeatherData, fetch_weather
 
 __all__ = [
