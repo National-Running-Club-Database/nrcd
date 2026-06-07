@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 
 from nrcd.data import meet_altitude_column, meet_altitude_ft_from_record
-from nrcd.standardize import parse_time, standardize_xc
+from nrcd.standardize import parse_time, standardize_xc, xc_target_distance_m
 
 XC_DISTANCE_M = {"M": 8000.0, "F": 6000.0}
 
@@ -57,6 +57,7 @@ def main() -> None:
     d_actual = cd.get("estimated_course_distance") or d_reported
     std = standardize_xc(
         raw, gender=row["gender"], reported_distance_m=d_reported, actual_distance_m=d_actual,
+        target_distance_m=xc_target_distance_m(row["gender"]),
         temperature=cd.get("temperature"), dew_point=cd.get("dew_point"),
         elevation_gain=cd.get("elevation_gain"), elevation_loss=cd.get("elevation_loss"),
         meet_elevation=meet_altitude_ft_from_record(row, cd),

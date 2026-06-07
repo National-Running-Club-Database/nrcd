@@ -64,7 +64,7 @@ PARAMETER_SPECS: tuple[ParameterSpec, ...] = (
         "reported_distance_m",
         "xc",
         "meters",
-        "Nominal event distance (8000 men / 6000 women in NIRCA).",
+        "Nominal event distance (e.g. 8000 m men / 6000 m women).",
         ("xc",),
         "May be omitted if reported_distance + distance_unit or event_name parses to a distance.",
     ),
@@ -95,6 +95,28 @@ PARAMETER_SPECS: tuple[ParameterSpec, ...] = (
         "optional",
         '"m" | "km" | "mi"',
         "Unit for reported_distance and actual_distance when not in meters.",
+        ("xc",),
+    ),
+    ParameterSpec(
+        "target_distance_m",
+        "optional",
+        "meters",
+        "Riegel-convert corrected time to this distance. Omit to keep the race distance.",
+        ("xc",),
+        "Alternative: target_distance='8k' or target_distance=8 with target_distance_unit='km'.",
+    ),
+    ParameterSpec(
+        "target_distance",
+        "optional",
+        "meters default (target_distance_unit)",
+        "Riegel target as number or label (e.g. '8k', 8 with unit='km').",
+        ("xc",),
+    ),
+    ParameterSpec(
+        "target_distance_unit",
+        "optional",
+        '"m" | "km" | "mi"',
+        "Unit for numeric target_distance when not a label like '8k'.",
         ("xc",),
     ),
     ParameterSpec(
@@ -209,15 +231,29 @@ PARAMETER_SPECS: tuple[ParameterSpec, ...] = (
         "city",
         "conditional",
         "text",
-        "US meet city; with state fetches meet altitude (OpenWeather geocode, USGS EPQS feet).",
-        ("altitude",),
-        "OpenWeather does not return altitude — only coordinates. See nrcd.enrich.API_GUIDE.",
+        "Meet city for OpenWeather geocoding (weather / optional altitude backfill).",
+        ("altitude", "weather"),
+        "With state (US), country (international), or geocode_query. See nrcd.enrich.API_GUIDE.",
     ),
     ParameterSpec(
         "state",
         "conditional",
-        "US abbrev",
-        "US state (e.g. CO); geocode query is city,state,US.",
+        "text",
+        "Region or US state (e.g. CO, ENG). Optional when country or geocode_query is set.",
+        ("altitude", "weather"),
+    ),
+    ParameterSpec(
+        "country",
+        "conditional",
+        "ISO code",
+        "Country for geocoding (e.g. GB, FR). Overrides EnrichConfig.geocode_country_suffix.",
+        ("altitude", "weather"),
+    ),
+    ParameterSpec(
+        "geocode_query",
+        "conditional",
+        "text",
+        "Free-form OpenWeather geocode q string (e.g. London,GB).",
         ("altitude", "weather"),
     ),
     ParameterSpec(
@@ -254,7 +290,9 @@ REQUIRED by pipeline
   Cross country (standardize_xc)
     reported distance   reported_distance_m, or reported_distance + distance_unit,
                         or labels like '5k' / '8000m'.
-    (plus Riegel to 8000 M / 6000 F NIRCA targets — not applied on road.)
+    target_distance_m   optional Riegel output distance (meters). Omit to keep race distance.
+                        Alternatives: target_distance='8k', target_distance=8 with
+                        target_distance_unit='km', or target_distance=4.97 with target_distance_unit='mi'.
 
   Road (standardize_road)
     event_name          e.g. "5k", "10k", "5000m", "Half Marathon", "Marathon" —
@@ -295,8 +333,8 @@ StandardizeConfig coefficients
   heat_k=0.0016              Quadratic heat slowdown above 100°F H
   riegel_b_men=1.055         Riegel exponent (men)
   riegel_b_women=1.08        Riegel exponent (women)
-  xc_target_men_m=8000       NIRCA men XC reference
-  xc_target_women_m=6000     NIRCA women XC reference
+  xc_target_men_m=8000       Default men XC Riegel target (StandardizeConfig)
+  xc_target_women_m=6000       Default women XC Riegel target (StandardizeConfig)
   elevation_gain_base=1.04   Maurer uphill
   elevation_loss_base=0.9633 Maurer downhill
   wind_max_mps=4.0           Wind clamp; linear scale from 2 m/s reference tables
@@ -304,7 +342,7 @@ StandardizeConfig coefficients
 
 Entry points (NRCD sport names)
 -------------------------------
-  standardize_xc              Cross Country — Riegel to 8k/6k after weather/grade/altitude
+  standardize_xc              Cross Country — optional target_distance_m (Riegel)
   standardize_road            Road / marathon — weather, grade, altitude only
   standardize_outdoor_track   Outdoor Track — wind (sprints), weather, grade, altitude
   standardize_indoor_track    Indoor Track — venue lap/bank, weather, grade, altitude
@@ -312,10 +350,13 @@ Entry points (NRCD sport names)
 
 API enrichment (nrcd.enrich — optional, pip install nrcd[apis])
 ---------------------------------------------------------------
-  city + state (US)   → meet altitude: OpenWeather geocode + USGS EPQS (feet); OW not altitude API
+  city + state (US)   → geocode city,state,US (default suffix)
+  city + country      → geocode city,CC (e.g. London,GB)
+  geocode_query       → free-form OpenWeather q string
+  lat + lon           → skip geocode; weather global; altitude via USGS (US-focused)
   city + state + event_date + event_time + API keys
                       → temperature, dew_point, humidity, real_feel, weather_*, aqi_*
-  Keys: NRCD_OPENWEATHER_API_KEY, NRCD_TIMEZONE_API_KEY — see nrcd.enrich.API_GUIDE
+  Keys: NRCD_OPENWEATHER_API_KEY, NRCD_TIMEZONE_API_KEY, NRCD_GEOCODE_COUNTRY_SUFFIX
 """
 
 

@@ -7,8 +7,24 @@ from dataclasses import replace
 from nrcd.enrich.altitude import lookup_altitude_ft
 from nrcd.enrich.api_usage import ApiUsage, EnrichResult
 from nrcd.enrich.config import EnrichConfig, api_keys_from_env
+from nrcd.enrich.geocode import build_geocode_query
 from nrcd.enrich.weather import WeatherData, fetch_weather
 from nrcd.standardize.context import RaceContext
+
+
+def _has_geocode_location(ctx: RaceContext, cfg: EnrichConfig) -> bool:
+    lat = getattr(ctx, "latitude", None)
+    lon = getattr(ctx, "longitude", None)
+    if lat is not None and lon is not None:
+        return True
+    city = getattr(ctx, "city", None)
+    return build_geocode_query(
+        city=city or "",
+        state=getattr(ctx, "state", None) or "",
+        country=getattr(ctx, "country", None),
+        geocode_query=getattr(ctx, "geocode_query", None),
+        default_country=cfg.geocode_country_suffix,
+    ) is not None
 
 
 def enrich_race_context(
@@ -22,14 +38,13 @@ def enrich_race_context(
     inplace: bool = True,
     usage: ApiUsage | None = None,
 ) -> RaceContext:
-    """Fill meet altitude and weather from city/state (+ date/time).
+    """Fill meet altitude and weather from location (+ date/time).
 
-    **Meet altitude** (``meet_elevation``, feet): ``city`` + ``state`` (US), or
-    ``latitude``/``longitude`` + USGS EPQS (skips geocode).
+    **Meet altitude** (``meet_elevation``, feet): geocode via ``city``/``state``,
+    ``city``/``country``, ``geocode_query``, or ``latitude``/``longitude`` + USGS EPQS.
 
-    **Weather + AQI:** ``city``, ``state``, ``event_date``, ``event_time`` plus API keys.
-    Pass ``latitude``/``longitude`` (and optionally ``timezone_name``) to avoid
-    repeat geocode/timezone calls when many events share one meet.
+    **Weather + AQI:** same location fields plus ``event_date``, ``event_time``, and API keys.
+    Pass ``latitude``/``longitude`` (and optionally ``timezone_name``) for global coords.
 
     Pass ``usage`` to accumulate :class:`~nrcd.enrich.ApiUsage` (HTTP calls only,
     not cache hits). See :func:`enrich_race_context_result` for context + usage
@@ -71,6 +86,8 @@ def enrich_race_context_result(
     call_usage = usage if usage is not None else ApiUsage()
     city = getattr(ctx, "city", None)
     state = getattr(ctx, "state", None)
+    country = getattr(ctx, "country", None)
+    geocode_query = getattr(ctx, "geocode_query", None)
     lat = getattr(ctx, "latitude", None)
     lon = getattr(ctx, "longitude", None)
     tz_name = getattr(ctx, "timezone_name", None)
@@ -78,10 +95,10 @@ def enrich_race_context_result(
 
     if fetch_altitude and ctx.meet_elevation is None:
         if lat is None or lon is None:
-            if not city or not state:
+            if not _has_geocode_location(ctx, cfg):
                 raise ValueError(
-                    "meet altitude lookup requires city and state on RaceContext, "
-                    "or latitude and longitude"
+                    "meet altitude lookup requires city and state, city and country, "
+                    "geocode_query, or latitude and longitude on RaceContext"
                 )
         alt_ft = lookup_altitude_ft(
             city or "",
@@ -90,6 +107,8 @@ def enrich_race_context_result(
             openweather_api_key=cfg.openweather_api_key,
             lat=lat,
             lon=lon,
+            country=country,
+            geocode_query=geocode_query,
             usage=call_usage,
         )
         if alt_ft is not None:
@@ -103,10 +122,10 @@ def enrich_race_context_result(
                 "weather lookup requires event_date and event_time on RaceContext "
                 "(datetime.date and datetime.time)"
             )
-        if not ((lat is not None and lon is not None) or (city and state)):
+        if not _has_geocode_location(ctx, cfg):
             raise ValueError(
-                "weather lookup requires city and state on RaceContext, "
-                "or latitude and longitude"
+                "weather lookup requires city and state, city and country, geocode_query, "
+                "or latitude and longitude on RaceContext"
             )
         wx = fetch_weather(
             city or "",
@@ -118,6 +137,8 @@ def enrich_race_context_result(
             timezone_api_key=cfg.timezone_api_key,
             lat=lat,
             lon=lon,
+            country=country,
+            geocode_query=geocode_query,
             timezone_name=tz_name,
             usage=call_usage,
         )

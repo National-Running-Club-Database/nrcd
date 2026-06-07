@@ -21,7 +21,7 @@ class StandardizeConfig:
     riegel_b_men, riegel_b_women : float
         Riegel exponents for distance conversion (XC and course-length adjust).
     xc_target_men_m, xc_target_women_m : float
-        NIRCA reference XC distances (8000 / 6000 m).
+        Default XC Riegel target distances (8000 / 6000 m) for xc_target_distance_m().
     elevation_gain_base, elevation_loss_base : float
         Maurer grade factors (1.04^g × 0.9633^l); g, l in percent grade.
     wind_max_mps : float

@@ -3,9 +3,8 @@
 Entry points (one per sport)
 ----------------------------
 ``standardize_xc``
-    Cross country. Weather, course grade, meet altitude, then **Riegel to NIRCA
-    targets** (8000 m M / 6000 m F). **Required:** ``time``, ``gender``, reported
-    distance.
+    Cross country. Weather, course grade, meet altitude; optional Riegel to
+    ``target_distance_m``. **Required:** ``time``, ``gender``, reported distance.
 
 ``standardize_road``
     Road / marathon. Same weather, grade, and altitude corrections as XC, but
@@ -88,6 +87,30 @@ _XC_DISTANCE_HELP = (
     "or reported_distance='5k'"
 )
 
+_TARGET_DISTANCE_HELP = (
+    "pass target_distance_m=8000, target_distance='8k', "
+    "target_distance=8 with target_distance_unit='km', or target_distance=4.97 with target_distance_unit='mi'"
+)
+
+
+def _resolve_target_distance_m(
+    *,
+    target_distance_m: float | None,
+    target_distance: float | int | str | None,
+    target_distance_unit: DistanceUnit,
+) -> float | None:
+    if target_distance_m is not None and target_distance is not None:
+        raise ValueError(
+            "pass target_distance_m or target_distance for Riegel target, not both; "
+            f"{_TARGET_DISTANCE_HELP}"
+        )
+    if target_distance_m is not None:
+        validate_positive_distance_m(target_distance_m, field="target_distance_m")
+        return target_distance_m
+    if target_distance is not None:
+        return parse_distance(target_distance, unit=target_distance_unit)
+    return None
+
 
 def _resolve_xc_distances(
     *,
@@ -148,13 +171,18 @@ def standardize_xc(
     apply_weather: bool = True,
     apply_elevation_grade: bool = True,
     apply_meet_altitude_correction: bool = True,
+    target_distance_m: float | None = None,
+    target_distance: float | int | str | None = None,
+    target_distance_unit: DistanceUnit = "m",
     config: StandardizeConfig | None = None,
 ) -> float:
-    """Cross-country pipeline: weather → grade → altitude → Riegel to NIRCA distance.
+    """Cross-country pipeline: weather → grade → altitude → optional Riegel target.
 
     XC and :func:`standardize_road` share weather, course grade, and meet-altitude
-    steps. Only XC applies Riegel normalization to NIRCA reference distances
-    (8000 m men / 6000 m women). Road uses :func:`standardize_road` instead.
+    steps. Pass a **target distance** to Riegel-convert the corrected time
+    (``target_distance_m=8000``, ``target_distance='8k'``, ``target_distance=8`` with
+    ``target_distance_unit='km'``, etc.). When omitted, the result stays at the
+    actual/reported race distance.
 
     Required
     --------
@@ -169,8 +197,9 @@ def standardize_xc(
     --------------------------------
     actual_distance_m / actual_distance, temperature, dew_point,
     elevation_gain, elevation_loss, meet_elevation, event_name,
-    temp_unit, venue_elevation_unit, grade_input, course_distance_m,
-    apply_* flags, config.
+    target_distance_m, target_distance, target_distance_unit,
+    temp_unit, venue_elevation_unit, grade_input,
+    course_distance_m, apply_* flags, config.
 
     Units (defaults match the NRCD database)
     ----------------------------------------
@@ -185,6 +214,7 @@ def standardize_xc(
     cfg = config or StandardizeConfig()
     validate_standardize_gender(gender)
     validate_distance_unit(distance_unit)
+    validate_distance_unit(target_distance_unit)
     validate_temp_unit(temp_unit)
     validate_venue_elevation_unit(venue_elevation_unit)
     validate_grade_input(grade_input)
@@ -199,7 +229,6 @@ def standardize_xc(
     )
 
     b = cfg.riegel_b(gender)
-    target = cfg.xc_target_m(gender)
 
     if apply_weather:
         temp_f = temperature_to_fahrenheit(temperature, temp_unit)
@@ -233,7 +262,15 @@ def standardize_xc(
     if d_reported > 0 and d_actual > 0 and abs(d_actual - d_reported) > 1:
         t = riegel_convert(t, d_actual, d_reported, b)
 
-    return riegel_convert(t, d_actual, target, b)
+    d_target = _resolve_target_distance_m(
+        target_distance_m=target_distance_m,
+        target_distance=target_distance,
+        target_distance_unit=target_distance_unit,
+    )
+    if d_target is not None:
+        t = riegel_convert(t, d_actual, d_target, b)
+
+    return t
 
 
 def standardize_result(
@@ -349,7 +386,7 @@ def standardize_road(
     """Road / marathon: weather → course grade → meet altitude.
 
     Same weather, grade, and altitude corrections as :func:`standardize_xc`, but
-    distance comes from ``event_name`` and there is **no Riegel step** to NIRCA
+    distance comes from ``event_name`` and there is **no Riegel target step**.
     XC targets. Use :func:`standardize_xc` for cross country.
     """
     kwargs.pop("sport_name", None)
@@ -462,6 +499,9 @@ def standardize_seconds(ctx: RaceContext) -> float:
                 venue_elevation_unit=ctx.venue_elevation_unit,
                 grade_input=ctx.grade_input,
                 course_distance_m=ctx.course_distance_m,
+                target_distance_m=ctx.target_distance_m,
+                target_distance=ctx.target_distance,
+                target_distance_unit=ctx.target_distance_unit,
                 config=ctx.config,
                 **xc_kwargs,
             )

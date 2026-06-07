@@ -6,7 +6,7 @@ Runnable scripts — **no NRCD Zenodo download** required except `load_dataset_e
 
 | Script | What it shows |
 |--------|----------------|
-| [`standardize_one_result.py`](standardize_one_result.py) | Minimal XC + track one-liners |
+| [`standardize_one_result.py`](standardize_one_result.py) | Minimal XC + track; XC uses explicit `target_distance_m` |
 | [`xc_examples.py`](xc_examples.py) | 5K/6K/8mi, clock strings, °F/°C, ft/m altitude, grade %/ft/m |
 | [`compare_improvement.py`](compare_improvement.py) | Two meets — raw vs standardized improvement |
 

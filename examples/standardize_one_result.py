@@ -12,8 +12,9 @@ def main() -> None:
         temperature=72,
         dew_point=65,
         meet_elevation=1200,
+        target_distance_m=8000,  # 8000m
     )
-    print(f"XC 5K standardized: {format_time(xc_std)}")
+    print(f"XC 5K standardized for 8000m: {format_time(xc_std)}")
 
     track_std = standardize_outdoor_track(
         "10.50",

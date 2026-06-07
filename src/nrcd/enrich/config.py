@@ -30,8 +30,13 @@ class EnrichConfig:
 
 
 def api_keys_from_env() -> EnrichConfig:
-    """Read ``NRCD_OPENWEATHER_API_KEY`` and ``NRCD_TIMEZONE_API_KEY``."""
+    """Read ``NRCD_OPENWEATHER_API_KEY``, ``NRCD_TIMEZONE_API_KEY``, ``NRCD_GEOCODE_COUNTRY_SUFFIX``."""
+    suffix = os.environ.get("NRCD_GEOCODE_COUNTRY_SUFFIX")
+    country = "US"
+    if suffix and suffix.strip():
+        country = suffix.strip().upper()
     return EnrichConfig(
         openweather_api_key=os.environ.get("NRCD_OPENWEATHER_API_KEY") or None,
         timezone_api_key=os.environ.get("NRCD_TIMEZONE_API_KEY") or None,
+        geocode_country_suffix=country,
     )

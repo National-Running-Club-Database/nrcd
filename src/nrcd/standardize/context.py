@@ -90,6 +90,15 @@ class RaceContext:
     actual_distance: float | int | str | None = None
     distance_unit: DistanceUnit = "m"
 
+    target_distance_m: float | None = None
+    """Optional Riegel output distance in meters."""
+
+    target_distance: float | int | str | None = None
+    """Like ``reported_distance`` — alternative to ``target_distance_m`` (e.g. ``'8k'``, ``8`` + unit)."""
+
+    target_distance_unit: DistanceUnit = "m"
+    """Unit for numeric ``target_distance`` when not a label like ``'8k'``."""
+
     # --- optional: track venue (indoor sport + lap_length_m / banked) ---
     lap_length_m: float | None = None
     banked: bool | str | None = None
@@ -97,12 +106,18 @@ class RaceContext:
     # --- optional: outdoor track wind (m/s, tailwind positive) ---
     wind_mps: float | None = None
 
-    # --- optional: US location → meet altitude via nrcd.enrich (OpenWeather geocode + USGS) ---
+    # --- optional: location → meet altitude / weather via nrcd.enrich (OpenWeather geocode) ---
     city: str | None = None
-    """US meet city; with ``state``, fetches **altitude** (ft) — not course gain/loss."""
+    """Meet city; with ``state`` or ``country``, geocodes via OpenWeather."""
 
     state: str | None = None
-    """US state abbreviation (e.g. ``CO``)."""
+    """Region or US state (e.g. ``CO``, ``ENG``). Optional when ``country`` or ``geocode_query`` is set."""
+
+    country: str | None = None
+    """ISO country code for geocoding (e.g. ``GB``, ``FR``). Overrides ``EnrichConfig.geocode_country_suffix``."""
+
+    geocode_query: str | None = None
+    """Free-form OpenWeather geocode query (e.g. ``London,GB``). Skips city/state/country assembly."""
 
     latitude: float | None = None
     """Meet latitude (NRCD ``meet.meet_latitude``); skips OpenWeather geocode when set with longitude."""

@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 from nrcd.enrich.api_usage import AQI_HISTORY_AVAILABLE_UNIX, ApiUsage
 from nrcd.enrich.cache import get_or_fetch, weather_cache_key
 from nrcd.enrich.config import EnrichConfig
-from nrcd.enrich.geocode import geocode_us_city_state
+from nrcd.enrich.geocode import geocode_location
 from nrcd.enrich.http import get_with_retries
 from nrcd.enrich.throttle import wait_for_provider
 from nrcd.enrich.timezone_lookup import lookup_timezone_name
@@ -137,6 +137,8 @@ def _resolve_coords(
     *,
     lat: float | None,
     lon: float | None,
+    country: str | None,
+    geocode_query: str | None,
     cfg: EnrichConfig,
     ow_key: str,
     use_cache: bool,
@@ -144,8 +146,15 @@ def _resolve_coords(
 ) -> tuple[float, float] | None:
     if lat is not None and lon is not None:
         return float(lat), float(lon)
-    return geocode_us_city_state(
-        city, state, config=cfg, api_key=ow_key, use_cache=use_cache, usage=usage
+    return geocode_location(
+        city,
+        state,
+        country=country,
+        geocode_query=geocode_query,
+        config=cfg,
+        api_key=ow_key,
+        use_cache=use_cache,
+        usage=usage,
     )
 
 
@@ -161,6 +170,8 @@ def _fetch_weather_uncached(
     use_cache: bool,
     lat: float | None = None,
     lon: float | None = None,
+    country: str | None = None,
+    geocode_query: str | None = None,
     timezone_name: str | None = None,
     usage: ApiUsage | None = None,
 ) -> WeatherData | None:
@@ -169,6 +180,8 @@ def _fetch_weather_uncached(
         state,
         lat=lat,
         lon=lon,
+        country=country,
+        geocode_query=geocode_query,
         cfg=cfg,
         ow_key=ow_key,
         use_cache=use_cache,
@@ -241,10 +254,16 @@ def fetch_weather(
     use_cache: bool | None = None,
     lat: float | None = None,
     lon: float | None = None,
+    country: str | None = None,
+    geocode_query: str | None = None,
     timezone_name: str | None = None,
     usage: ApiUsage | None = None,
 ) -> WeatherData | None:
     """Fetch historical weather (+ AQI when available) for the race start hour.
+
+    **Geocoding:** pass ``lat``/``lon`` (global), ``geocode_query`` (e.g. ``London,GB``),
+    ``city`` + ``country`` (ISO code), or US-style ``city`` + ``state`` (with
+    ``EnrichConfig.geocode_country_suffix`` default ``US``).
 
     **Hourly snapshots:** OpenWeather timemachine and AQI history return the
     **hour containing** ``event_time``, not a minute-level reading. The actual
@@ -270,7 +289,15 @@ def fetch_weather(
         raise ValueError("timezone_api_key required unless timezone_name is set")
 
     cache_on = cfg.cache_enabled if use_cache is None else use_cache
-    cache_key = weather_cache_key(city, state, event_date, event_time, cfg.geocode_country_suffix)
+    country_for_cache = (country or cfg.geocode_country_suffix or "US").upper()
+    cache_key = weather_cache_key(
+        city,
+        state,
+        event_date,
+        event_time,
+        country_for_cache,
+        geocode_query=geocode_query,
+    )
     if lat is not None and lon is not None:
         cache_key = (
             f"wx:coords:{lat:.5f},{lon:.5f}:{event_date.isoformat()}:"
@@ -289,6 +316,8 @@ def fetch_weather(
             use_cache=cache_on,
             lat=lat,
             lon=lon,
+            country=country,
+            geocode_query=geocode_query,
             timezone_name=timezone_name,
             usage=usage,
         )

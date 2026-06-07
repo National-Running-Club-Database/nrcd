@@ -5,7 +5,7 @@ Quick reference
 **Required everywhere:** race ``time`` (seconds or ``"MM:SS"`` / ``"H:MM:SS"``), ``gender`` (``M`` / ``F``).
 
 **Cross country** — :func:`standardize_xc`:
-  required distance; weather, grade, meet altitude; Riegel to NIRCA 8k/6k targets.
+  required distance; weather, grade, meet altitude; optional ``target_distance_m`` (Riegel).
 
 **Road** — :func:`standardize_road`:
   same weather / grade / altitude as XC; distance from ``event_name``; no Riegel target step.

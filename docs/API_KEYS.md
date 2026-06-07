@@ -64,6 +64,46 @@ In Python you can also print the full guide: `from nrcd.enrich import API_GUIDE;
 
 **Course grade** (`elevation_gain` / `elevation_loss`) is separate from meet altitude — it describes the hill profile of the course, not the venue elevation.
 
+### Geographic coverage
+
+| Method | Example |
+| ------ | ------- |
+| US city + state | `city="Notre Dame"`, `state="IN"` → `Notre Dame,IN,US` |
+| City + country | `city="London"`, `country="GB"` → `London,GB` |
+| Free-form query | `geocode_query="Paris,FR"` |
+| Default country | `EnrichConfig(geocode_country_suffix="CA")` or `export NRCD_GEOCODE_COUNTRY_SUFFIX=CA` |
+| Coordinates | `latitude` / `longitude` on `RaceContext` (global weather) |
+
+**Weather** works worldwide once coordinates are resolved. **Meet altitude** (USGS EPQS) is US-focused — set `meet_elevation` manually for non-US venues.
+
+```python
+import datetime as dt
+
+from nrcd.enrich import EnrichConfig, enrich_race_context
+from nrcd.standardize import RaceContext
+
+ctx = RaceContext(
+    time_str="15:30",
+    gender="M",
+    sport_name="Cross Country",
+    reported_distance="10k",
+    city="London",
+    country="GB",
+    event_date=dt.date(2024, 10, 12),
+    event_time=dt.time(11, 0),
+)
+enrich_race_context(ctx, fetch_altitude=False)
+
+# Or: ctx.geocode_query = "Paris,FR"
+# Or: EnrichConfig(geocode_country_suffix="FR") with city + optional region in state
+```
+
+Environment variable (optional):
+
+```bash
+export NRCD_GEOCODE_COUNTRY_SUFFIX=GB
+```
+
 ---
 
 ## OpenWeather (first time)

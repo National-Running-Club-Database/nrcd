@@ -90,5 +90,6 @@ def riegel_exponent(gender: str, config: StandardizeConfig | None = None) -> flo
 
 
 def xc_target_distance_m(gender: str, config: StandardizeConfig | None = None) -> float:
+    """Default XC Riegel target distance in meters (8000 M / 6000 F from config)."""
     cfg = config or _DEFAULT
     return cfg.xc_target_m(gender)

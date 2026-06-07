@@ -3,16 +3,22 @@
 
 from __future__ import annotations
 
-from nrcd.standardize import format_time, parse_time, standardize_xc
+from nrcd.standardize import format_time, parse_time, standardize_xc, xc_target_distance_m
 
 
 def xc_std(time, *, gender, actual_distance_m, temperature, dew_point,
            elevation_gain=0, elevation_loss=0, meet_elevation=None):
-    target = 8000.0 if gender == "M" else 6000.0
     return standardize_xc(
-        time, gender=gender, reported_distance_m=target,
-        actual_distance_m=actual_distance_m, temperature=temperature, dew_point=dew_point,
-        elevation_gain=elevation_gain, elevation_loss=elevation_loss, meet_elevation=meet_elevation,
+        time,
+        gender=gender,
+        reported_distance_m=actual_distance_m,
+        actual_distance_m=actual_distance_m,
+        target_distance_m=xc_target_distance_m(gender),
+        temperature=temperature,
+        dew_point=dew_point,
+        elevation_gain=elevation_gain,
+        elevation_loss=elevation_loss,
+        meet_elevation=meet_elevation,
     )
 
 

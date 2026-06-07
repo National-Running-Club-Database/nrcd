@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from nrcd.standardize import format_time, standardize_xc
+from nrcd.standardize import format_time, standardize_xc, xc_target_distance_m
 
 
 def show(label: str, raw, std: float) -> None:
@@ -12,20 +12,31 @@ def show(label: str, raw, std: float) -> None:
 
 
 def main() -> None:
-    print("Cross country — standardize_xc examples\n")
+    print("Cross country — standardize_xc examples")
+    print("(Pass target_distance_m for Riegel to a common distance; omit to keep race distance.)\n")
 
-    # 5K clock string
+    # 5K clock string → 8000 m
     show(
-        "5K (men)",
+        "5K (men) → 8000 m",
         "22:15",
-        standardize_xc("22:15", gender="M", reported_distance="5k"),
+        standardize_xc(
+            "22:15",
+            gender="M",
+            reported_distance="5k",
+            target_distance_m=xc_target_distance_m("M"),
+        ),
     )
 
-    # Women's 6K
+    # Women's 6K → 6000 m
     show(
-        "6K (women)",
+        "6K (women) → 6000 m",
         "24:30",
-        standardize_xc("24:30", gender="F", reported_distance="6k"),
+        standardize_xc(
+            "24:30",
+            gender="F",
+            reported_distance="6k",
+            target_distance_m=xc_target_distance_m("F"),
+        ),
     )
 
     # 8-mile XC with weather, grade, and meet altitude (°F / feet defaults)
@@ -43,6 +54,7 @@ def main() -> None:
             elevation_gain=2.5,
             elevation_loss=2.5,
             meet_elevation=5200,
+            target_distance_m=xc_target_distance_m("M"),
         ),
     )
 
@@ -60,6 +72,7 @@ def main() -> None:
             temp_unit="C",
             meet_elevation=1585,
             venue_elevation_unit="m",
+            target_distance_m=xc_target_distance_m("M"),
         ),
     )
 

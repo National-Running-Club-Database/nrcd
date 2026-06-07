@@ -18,12 +18,28 @@ def _normalize_city_state(city: str, state: str) -> tuple[str, str]:
     return (city or "").strip().lower(), (state or "").strip().lower()
 
 
-def geocode_cache_key(city: str, state: str, country: str = "US") -> str:
+def geocode_cache_key(
+    city: str,
+    state: str,
+    country: str = "US",
+    *,
+    geocode_query: str | None = None,
+) -> str:
+    if geocode_query and geocode_query.strip():
+        return f"geocode:q:{geocode_query.strip().lower()}"
     c, s = _normalize_city_state(city, state)
     return f"geocode:{c}:{s}:{country.upper()}"
 
 
-def altitude_cache_key(city: str, state: str, country: str = "US") -> str:
+def altitude_cache_key(
+    city: str,
+    state: str,
+    country: str = "US",
+    *,
+    geocode_query: str | None = None,
+) -> str:
+    if geocode_query and geocode_query.strip():
+        return f"altitude:q:{geocode_query.strip().lower()}"
     c, s = _normalize_city_state(city, state)
     return f"altitude:{c}:{s}:{country.upper()}"
 
@@ -38,7 +54,14 @@ def weather_cache_key(
     event_date: dt.date,
     event_time: dt.time,
     country: str = "US",
+    *,
+    geocode_query: str | None = None,
 ) -> str:
+    if geocode_query and geocode_query.strip():
+        return (
+            f"weather:q:{geocode_query.strip().lower()}:"
+            f"{event_date.isoformat()}:{event_time.isoformat()}"
+        )
     c, s = _normalize_city_state(city, state)
     return f"weather:{c}:{s}:{country.upper()}:{event_date.isoformat()}:{event_time.isoformat()}"
 

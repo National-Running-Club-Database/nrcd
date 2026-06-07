@@ -2,8 +2,11 @@
 
 Requires ``pip install nrcd[apis]`` (installs ``requests``).
 
-**Meet altitude** (city/state): OpenWeather geocodes; **USGS EPQS** returns feet.
-OpenWeather does **not** supply altitude — only weather, AQI, and coordinates.
+**Geocoding:** US default is ``city,state,US``. International options: ``city`` + ``country`` on
+``RaceContext``, ``geocode_query`` (e.g. ``London,GB``), ``EnrichConfig(geocode_country_suffix=...)``,
+or env ``NRCD_GEOCODE_COUNTRY_SUFFIX``. ``lat``/``lon`` skips geocode (global weather).
+
+**Meet altitude** uses USGS EPQS after geocoding — US-focused; pass ``meet_elevation`` for non-US venues.
 
 API signup: :data:`nrcd.enrich.API_GUIDE`.
 """
@@ -25,7 +28,7 @@ from nrcd.enrich.cache import cache_stats, clear_enrich_cache
 from nrcd.enrich.config import EnrichConfig, api_keys_from_env
 from nrcd.enrich.context import enrich_race_context, enrich_race_context_result
 from nrcd.enrich.guide import API_GUIDE
-from nrcd.enrich.throttle import reset_throttle_state
+from nrcd.enrich.geocode import build_geocode_query, geocode_location, geocode_us_city_state
 from nrcd.enrich.weather import WeatherData, fetch_weather
 
 __all__ = [
@@ -38,6 +41,9 @@ __all__ = [
     "EnrichResult",
     "WeatherData",
     "api_keys_from_env",
+    "build_geocode_query",
+    "geocode_location",
+    "geocode_us_city_state",
     "EnrichJob",
     "JobResult",
     "cache_stats",

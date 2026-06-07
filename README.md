@@ -14,17 +14,31 @@ Use this to **standardize your own race results** — no NRCD dataset download r
 
 Times can be **seconds** or clock strings (`"22:15"`, `"4:12.00"`, `"10.52"`). XC distances accept **m/km/mi** or labels like `"5k"`. Invalid time, distance, or unit strings raise **ValueError** with a short hint (they do not return NaN silently).
 
-**Cross country — 5K in 22:15**
+**Cross country** — pass a **target distance** when you want a Riegel conversion (e.g. 8000m). Without it, the standardized time stays at the race distance.
+
+**Cross country — 5K in 22:15, target distance 8000m**
 
 ```python
-from nrcd import standardize_xc  # or: from nrcd.standardize import standardize_xc
+from nrcd import format_time, standardize_xc
 
-std = standardize_xc("22:15", gender="M", reported_distance="5k")
+std = standardize_xc(
+    "22:15",
+    gender="M",
+    reported_distance="5k",
+    target_distance_m=8000,  # 8000m
+    # target_distance="8k",
+    # target_distance=8, target_distance_unit="km",
+    # target_distance=4.97, target_distance_unit="mi",  # ~8000m
+)
+print(format_time(std))
+# → 36:31.94
 ```
 
-**Cross country — 8 km with weather, grade, altitude**
+**Cross country — 8 km with weather, grade, altitude, target distance 8000m**
 
 ```python
+from nrcd import format_time, standardize_xc
+
 std = standardize_xc(
     "27:30",
     gender="M",
@@ -36,7 +50,10 @@ std = standardize_xc(
     elevation_gain=2.5,      # % grade (default)
     elevation_loss=2.5,
     meet_elevation=5200,     # feet (default)
+    target_distance_m=8000,  # 8000m
 )
+print(format_time(std))
+# → 26:42.19
 ```
 
 **Outdoor track — 100m with wind**
@@ -50,6 +67,8 @@ std = standardize_outdoor_track(
     event_name="100m",
     wind_mps=2.0,
 )
+print(f"{std:.3f} s")
+# → 13.630 s
 ```
 
 **Indoor track — 200m on a banked 200m oval**
@@ -64,12 +83,14 @@ std = standardize_indoor_track(
     lap_length_m=200,
     banked=True,
 )
+print(f"{std:.3f} s")
+# → 22.588 s
 ```
 
 **Road — half marathon with weather and grade**
 
 ```python
-from nrcd import standardize_road
+from nrcd import format_time, standardize_road
 
 std = standardize_road(
     "1:25:30",
@@ -80,6 +101,8 @@ std = standardize_road(
     elevation_gain=1.2,
     elevation_loss=1.2,
 )
+print(format_time(std))
+# → 1:25:40.54 (same event distance; no Riegel target conversion)
 ```
 
 ### Pipelines
@@ -87,7 +110,7 @@ std = standardize_road(
 
 | Sport         | Function                    | What differs                                                                            |
 | ------------- | --------------------------- | --------------------------------------------------------------------------------------- |
-| Cross country | `standardize_xc`            | Weather, grade, altitude, then **Riegel to NIRCA 8k/6k**                                |
+| Cross country | `standardize_xc`            | Weather, grade, altitude; optional **Riegel** to a target distance (e.g. 8000m)       |
 | Road          | `standardize_road`          | Same weather / grade / altitude as XC; distance from `event_name`; **no Riegel target** |
 | Outdoor track | `standardize_outdoor_track` | Sprint **wind**, weather, grade, altitude                                               |
 | Indoor track  | `standardize_indoor_track`  | **Lap/bank venue** factors; no wind                                                     |
@@ -164,6 +187,7 @@ Standardization does **not** need API keys. Use enrichment only when backfilling
 ```bash
 export NRCD_OPENWEATHER_API_KEY="your_key"
 export NRCD_TIMEZONE_API_KEY="your_key"   # weather only
+export NRCD_GEOCODE_COUNTRY_SUFFIX=US     # optional; ISO country for geocoding
 ```
 
 **Live tests (optional):** copy `local_api_keys.env.example` → `local_api_keys.env` (gitignored), add your OpenWeather key, then `pytest -m live_api -v`. AQI history starts **2020-11-27**; default test date is **2024-10-12**.
@@ -171,6 +195,40 @@ export NRCD_TIMEZONE_API_KEY="your_key"   # weather only
 **Full walkthrough:** [![API keys guide](https://img.shields.io/badge/docs-API__KEYS-0366d6?logo=readthedocs)](docs/API_KEYS.md). In Python: `from nrcd.enrich import API_GUIDE; print(API_GUIDE)`.
 
 Historical OpenWeather timemachine weather may require a **paid** OpenWeather plan; geocoding + USGS altitude often work on the free tier.
+
+### Geographic coverage (`nrcd.enrich`)
+
+| Method | Example | Weather | Altitude (USGS) |
+| ------ | ------- | ------- | ---------------- |
+| **US city + state** | `city="Notre Dame"`, `state="IN"` | ✅ | ✅ (US) |
+| **City + country** | `city="London"`, `country="GB"` | ✅ | ⚠️ set `meet_elevation` non-US |
+| **Free-form query** | `geocode_query="Paris,FR"` | ✅ | ⚠️ same |
+| **Config / env default country** | `EnrichConfig(geocode_country_suffix="CA")` or `NRCD_GEOCODE_COUNTRY_SUFFIX=CA` | ✅ | ⚠️ same |
+| **Lat/lon** | `latitude=51.5`, `longitude=-0.12` | ✅ global | ⚠️ US-focused EPQS |
+
+```python
+import datetime as dt
+from nrcd.enrich import EnrichConfig, enrich_race_context
+from nrcd.standardize import RaceContext
+
+# International weather — city + country (no US state required)
+ctx = RaceContext(
+    time_str="15:30",
+    gender="M",
+    sport_name="Cross Country",
+    reported_distance="10k",
+    city="London",
+    country="GB",
+    event_date=dt.date(2024, 10, 12),
+    event_time=dt.time(11, 0),
+)
+enrich_race_context(ctx, fetch_altitude=False)  # skip USGS outside US
+
+# Or free-form geocode query
+ctx.geocode_query = "Paris,FR"
+```
+
+Standardization has no geographic limit — only optional enrichment does.
 
 ## Do you need the NRCD dataset?
 
@@ -194,7 +252,7 @@ Full parameter tables: `from nrcd import PARAMETERS_DOC` or `help(nrcd.standardi
 
 | Function                    | Use for                                                                 |
 | --------------------------- | ----------------------------------------------------------------------- |
-| `standardize_xc`            | Cross country — distance in m/km/mi; Riegel to NIRCA targets            |
+| `standardize_xc`            | Cross country — optional target distance (`target_distance_m`, `target_distance` + unit, or `"8k"`) |
 | `standardize_road`          | Road / marathon — `event_name`; weather, grade, altitude                |
 | `standardize_outdoor_track` | Outdoor track — `event_name`; wind on sprints                           |
 | `standardize_indoor_track`  | Indoor track — `event_name`; lap length / banking                       |
@@ -251,7 +309,7 @@ Full parameter tables: `from nrcd import PARAMETERS_DOC` or `help(nrcd.standardi
 | `barometric_pressure_hpa_from_record`                                 | hPa from row fields                                        |
 | `barometric_pressure_torr_from_hpa`, `parse_barometric_pressure_hpa`  | Pressure unit helpers                                      |
 | `riegel_convert`, `riegel_exponent`                                   | Distance conversion                                        |
-| `xc_target_distance_m`                                                | NIRCA reference XC distance (8000 M / 6000 F)              |
+| `xc_target_distance_m`                                                | Config helper for target distance in meters (8000m M / 6000m F) |
 | `apply_factors`                                                       | Multiply time by weather/grade/altitude/track/wind factors |
 | `is_cross_country`, `is_track`, `is_outdoor_track`, `is_indoor_track` | Sport name checks                                          |
 | `normalize_sport_name`, `pipeline_kind`                               | Sport string normalization / `xc` vs `track`               |
@@ -275,8 +333,8 @@ Full parameter tables: `from nrcd import PARAMETERS_DOC` or `help(nrcd.standardi
 | `API_GUIDE`                                                           | Full signup guide (text); see also [![API keys guide](https://img.shields.io/badge/docs-API__KEYS-0366d6?logo=readthedocs)](docs/API_KEYS.md) |
 | `EnrichConfig`                                                        | Throttle intervals, cache TTL, API keys                                   |
 | `api_keys_from_env`                                                   | Load keys from environment                                                |
-| `fetch_weather`                                                       | Temperature, dew point, humidity, AQI for city/state + date               |
-| `lookup_altitude_ft`, `lookup_altitude_detail`, `lookup_elevation_ft` | Meet altitude (USGS EPQS, ft)                                             |
+| `fetch_weather`                                                       | Temperature, dew point, humidity, AQI — global with `lat`/`lon`; US city/state by default |
+| `lookup_altitude_ft`, `lookup_altitude_detail`, `lookup_elevation_ft` | Meet altitude (USGS EPQS, ft) — US city/state path; set `meet_elevation` for non-US |
 | `enrich_race_context`, `enrich_race_context_result`                   | Backfill a `RaceContext` in place                                         |
 | `run_enrich_jobs`, `EnrichJob`, `JobResult`                           | Batch enrichment with thread pool                                         |
 | `EnrichResult`, `ApiUsage`, `WeatherData`, `AltitudeResult`           | Result / usage dataclasses                                                |

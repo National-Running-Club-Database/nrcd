@@ -57,7 +57,7 @@ def test_fetch_weather_skips_geocode_with_coords(monkeypatch):
         geocode_calls["n"] += 1
         return 40.0, -105.0
 
-    monkeypatch.setattr("nrcd.enrich.geocode.geocode_us_city_state", fake_geocode)
+    monkeypatch.setattr("nrcd.enrich.weather.geocode_location", fake_geocode)
     monkeypatch.setattr(
         "nrcd.enrich.weather._fetch_weather_uncached",
         lambda *a, **k: WeatherData(temperature=65.0, dew_point=45.0),

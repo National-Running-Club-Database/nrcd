@@ -67,6 +67,7 @@ def test_standardize_xc_riegel_to_target():
         gender="M",
         reported_distance_m=8000,
         actual_distance_m=8000,
+        target_distance_m=cfg.xc_target_men_m,
         apply_weather=False,
         apply_elevation_grade=False,
         apply_meet_altitude_correction=False,
@@ -117,6 +118,65 @@ def test_parse_distance_units():
     assert parse_distance(8, unit="mi") == pytest.approx(8 * 1609.34)
     assert parse_distance("5k") == pytest.approx(5000)
     assert parse_distance("8000m") == pytest.approx(8000)
+
+
+def test_standardize_xc_target_distance_label():
+    raw = parse_time("22:15")
+    std_m = standardize_xc(
+        "22:15",
+        gender="M",
+        reported_distance="5k",
+        target_distance_m=8000,
+        apply_weather=False,
+        apply_elevation_grade=False,
+        apply_meet_altitude_correction=False,
+    )
+    std_k = standardize_xc(
+        "22:15",
+        gender="M",
+        reported_distance="5k",
+        target_distance="8k",
+        apply_weather=False,
+        apply_elevation_grade=False,
+        apply_meet_altitude_correction=False,
+    )
+    std_unit = standardize_xc(
+        "22:15",
+        gender="M",
+        reported_distance="5k",
+        target_distance=8,
+        target_distance_unit="km",
+        apply_weather=False,
+        apply_elevation_grade=False,
+        apply_meet_altitude_correction=False,
+    )
+    assert std_m == pytest.approx(std_k)
+    assert std_m == pytest.approx(std_unit)
+    assert std_m > raw
+
+
+def test_standardize_xc_target_distance_conflict_raises():
+    with pytest.raises(ValueError, match="not both"):
+        standardize_xc(
+            "22:15",
+            gender="M",
+            reported_distance="5k",
+            target_distance_m=8000,
+            target_distance="8k",
+        )
+
+
+def test_standardize_xc_no_target_skips_riegel():
+    raw = parse_time("22:15")
+    std = standardize_xc(
+        "22:15",
+        gender="M",
+        reported_distance="5k",
+        apply_weather=False,
+        apply_elevation_grade=False,
+        apply_meet_altitude_correction=False,
+    )
+    assert std == pytest.approx(raw)
 
 
 def test_standardize_xc_time_string_and_km():
