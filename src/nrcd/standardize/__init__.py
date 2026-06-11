@@ -40,8 +40,17 @@ from nrcd.standardize.altitude import (
     resolve_meet_altitude_inputs,
     sea_level_time_seconds,
 )
+from nrcd.standardize.batch import (
+    COLUMN_ALIASES,
+    DataframeBatchResult,
+    enrich_dataframe,
+    resolve_column_map,
+    row_to_race_context,
+    standardize_dataframe,
+)
 from nrcd.standardize.config import StandardizeConfig
 from nrcd.standardize.context import RaceContext, XCRaceContext
+from nrcd.standardize.detail import StandardizeDetail, StandardizeStep
 from nrcd.standardize.factors import (
     elevation_factor,
     heat_index,
@@ -55,15 +64,6 @@ from nrcd.standardize.grade import (
     apply_course_grade_factor,
     warn_one_sided_course_grade,
 )
-from nrcd.standardize.batch import (
-    COLUMN_ALIASES,
-    DataframeBatchResult,
-    enrich_dataframe,
-    resolve_column_map,
-    row_to_race_context,
-    standardize_dataframe,
-)
-from nrcd.standardize.detail import StandardizeDetail, StandardizeStep
 from nrcd.standardize.pipeline import (
     apply_factors,
     standardize_indoor_track,

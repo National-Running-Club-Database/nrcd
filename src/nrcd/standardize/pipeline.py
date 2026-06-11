@@ -35,7 +35,12 @@ import math
 from nrcd.standardize.altitude import apply_meet_altitude, barometric_pressure_hpa_from_record
 from nrcd.standardize.config import StandardizeConfig
 from nrcd.standardize.context import RaceContext, XCRaceContext
-from nrcd.standardize.detail import StandardizeDetail, StandardizeStep, _step_additive, _step_multiplicative
+from nrcd.standardize.detail import (
+    StandardizeDetail,
+    StandardizeStep,
+    _step_additive,
+    _step_multiplicative,
+)
 from nrcd.standardize.events import parse_event_distance_m
 from nrcd.standardize.factors import riegel_convert, weather_factor
 from nrcd.standardize.grade import apply_course_grade_factor
