@@ -40,8 +40,14 @@ class ApiUsage:
     def total(self) -> int:
         return sum(getattr(self, f) for f in _USAGE_FIELDS)
 
+    @property
+    def openweather_total(self) -> int:
+        """OpenWeather HTTP calls (geocode + timemachine + AQI)."""
+        return self.openweather_geocode + self.openweather_timemachine + self.openweather_aqi
+
     def to_dict(self) -> dict[str, int]:
         out = {f: getattr(self, f) for f in _USAGE_FIELDS}
+        out["openweather_total"] = self.openweather_total
         out["total"] = self.total
         return out
 

@@ -7,6 +7,12 @@ def test_api_usage_to_dict():
     d = u.to_dict()
     assert d["openweather_geocode"] == 1
     assert d["usgs_epqs"] == 2
+    assert d["openweather_total"] == 1
+
+
+def test_api_usage_openweather_total():
+    u = ApiUsage(openweather_geocode=1, openweather_timemachine=2, openweather_aqi=3)
+    assert u.openweather_total == 6
 
 
 def test_api_usage_add():

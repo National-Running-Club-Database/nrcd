@@ -14,6 +14,7 @@ from nrcd.standardize import (
     standardize_xc,
     temperature_to_fahrenheit,
     weather_factor,
+    xc_target_distance_m,
 )
 from nrcd.standardize.units import resolve_grade_percent
 
@@ -118,6 +119,11 @@ def test_parse_distance_units():
     assert parse_distance(8, unit="mi") == pytest.approx(8 * 1609.34)
     assert parse_distance("5k") == pytest.approx(5000)
     assert parse_distance("8000m") == pytest.approx(8000)
+
+
+def test_xc_target_distance_m_defaults():
+    assert xc_target_distance_m("M") == 8000.0
+    assert xc_target_distance_m("F") == 6000.0
 
 
 def test_standardize_xc_target_distance_label():
@@ -244,6 +250,14 @@ def test_format_time_round_trip():
 
     assert format_time(1335.0) == "22:15.00"
     assert format_time(10.5) == "10.50"
+
+
+def test_format_time_invalid_returns_empty_string():
+    from nrcd.standardize import format_time
+
+    assert format_time(-1.0) == ""
+    assert format_time(float("nan")) == ""
+    assert format_time(float("inf")) == ""
 
 
 def test_meet_elevation_zero_sea_level():

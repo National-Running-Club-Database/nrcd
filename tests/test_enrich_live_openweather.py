@@ -146,3 +146,53 @@ def test_live_fetch_weather(ow_key: str):
 
 def test_aqi_start_date_documented():
     assert AQI_HISTORY_AVAILABLE_FROM == dt.date(2020, 11, 27)
+
+
+def test_live_enrich_dataframe_batch_usage(ow_key: str):
+    pd = pytest.importorskip("pandas")
+    tz_key = timezone_api_key()
+    if not tz_key:
+        pytest.skip(
+            "No valid NRCD_TIMEZONE_API_KEY — set it in local_api_keys.env for weather tests"
+        )
+
+    from nrcd.enrich.cache import clear_enrich_cache
+    from nrcd.enrich.config import EnrichConfig
+    from nrcd.standardize import DataframeBatchResult, enrich_dataframe
+
+    clear_enrich_cache()
+    event_date = live_test_date()
+    assert event_date >= AQI_HISTORY_AVAILABLE_FROM
+
+    rows = [
+        {
+            "gender": "M",
+            "result_time": "22:15",
+            "sport_name": "Cross Country",
+            "reported_distance": "5k",
+            "city": live_test_city(),
+            "state": live_test_state(),
+            "event_date": event_date.isoformat(),
+            "event_time": live_test_time().strftime("%H:%M"),
+        }
+        for _ in range(3)
+    ]
+    result = enrich_dataframe(
+        pd.DataFrame(rows),
+        fetch_altitude=False,
+        config=EnrichConfig(
+            openweather_api_key=ow_key,
+            timezone_api_key=tz_key,
+        ),
+        return_usage=True,
+    )
+    assert isinstance(result, DataframeBatchResult)
+    if result.dataframe.loc[0, "temperature"] is None:
+        pytest.skip("Weather enrich incomplete — check OpenWeather / TimeZoneDB keys")
+
+    usage = result.api_usage
+    assert usage is not None
+    assert usage.openweather_geocode == 1
+    assert usage.openweather_timemachine == 1
+    assert usage.openweather_total >= 2
+    assert usage.to_dict()["openweather_total"] == usage.openweather_total

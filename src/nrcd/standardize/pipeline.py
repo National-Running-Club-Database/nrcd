@@ -35,12 +35,13 @@ import math
 from nrcd.standardize.altitude import apply_meet_altitude, barometric_pressure_hpa_from_record
 from nrcd.standardize.config import StandardizeConfig
 from nrcd.standardize.context import RaceContext, XCRaceContext
+from nrcd.standardize.detail import StandardizeDetail, StandardizeStep, _step_additive, _step_multiplicative
 from nrcd.standardize.events import parse_event_distance_m
 from nrcd.standardize.factors import riegel_convert, weather_factor
 from nrcd.standardize.grade import apply_course_grade_factor
 from nrcd.standardize.sport import is_cross_country
 from nrcd.standardize.time import parse_time
-from nrcd.standardize.track import apply_track_venue
+from nrcd.standardize.track import track_venue_factor
 from nrcd.standardize.units import (
     DistanceUnit,
     GradeInput,
@@ -147,6 +148,132 @@ def _resolve_xc_distances(
     return d_reported, d_actual
 
 
+def _standardize_xc_core(
+    time: float | int | str,
+    *,
+    gender: str,
+    reported_distance_m: float | None = None,
+    actual_distance_m: float | None = None,
+    reported_distance: float | int | str | None = None,
+    actual_distance: float | int | str | None = None,
+    distance_unit: DistanceUnit = "m",
+    temperature: float | None = None,
+    dew_point: float | None = None,
+    elevation_gain: float | None = None,
+    elevation_loss: float | None = None,
+    meet_elevation: float | None = None,
+    barometric_pressure: float | None = None,
+    barometric_pressure_hpa: float | None = None,
+    event_name: str | None = None,
+    temp_unit: TemperatureUnit = "F",
+    venue_elevation_unit: VenueElevationUnit = "ft",
+    grade_input: GradeInput = "percent",
+    course_distance_m: float | None = None,
+    apply_weather: bool = True,
+    apply_elevation_grade: bool = True,
+    apply_meet_altitude_correction: bool = True,
+    target_distance_m: float | None = None,
+    target_distance: float | int | str | None = None,
+    target_distance_unit: DistanceUnit = "m",
+    config: StandardizeConfig | None = None,
+    collect_steps: bool = False,
+) -> float | tuple[float, list[StandardizeStep]]:
+    """Internal XC pipeline; set ``collect_steps=True`` for :func:`standardize_xc_detail`."""
+    cfg = config or StandardizeConfig()
+    validate_standardize_gender(gender)
+    validate_distance_unit(distance_unit)
+    validate_distance_unit(target_distance_unit)
+    validate_temp_unit(temp_unit)
+    validate_venue_elevation_unit(venue_elevation_unit)
+    validate_grade_input(grade_input)
+
+    steps: list[StandardizeStep] = []
+    t = _resolve_time(time)
+    d_reported, d_actual = _resolve_xc_distances(
+        reported_distance_m=reported_distance_m,
+        actual_distance_m=actual_distance_m,
+        reported_distance=reported_distance,
+        actual_distance=actual_distance,
+        distance_unit=distance_unit,
+    )
+
+    b = cfg.riegel_b(gender)
+
+    if apply_weather:
+        temp_f = temperature_to_fahrenheit(temperature, temp_unit)
+        dew_f = temperature_to_fahrenheit(dew_point, temp_unit)
+        wf = weather_factor(temp_f, dew_f, k=cfg.heat_k)
+        t_after = t * wf
+        if collect_steps:
+            steps.append(_step_multiplicative("weather", t, t_after))
+        t = t_after
+
+    if apply_elevation_grade:
+        t_after = apply_course_grade_factor(
+            t,
+            elevation_gain,
+            elevation_loss,
+            course_distance_m=course_distance_m or d_actual,
+            grade_input=grade_input,
+            config=cfg,
+        )
+        if collect_steps:
+            steps.append(_step_multiplicative("grade", t, t_after))
+        t = t_after
+
+    pb_hpa = barometric_pressure_hpa_from_record(
+        {"barometric_pressure": barometric_pressure, "barometric_pressure_hpa": barometric_pressure_hpa}
+    )
+    if apply_meet_altitude_correction and meet_elevation is not None:
+        alt_event = event_name or f"{int(d_reported)}m"
+        t_after = apply_meet_altitude(
+            t,
+            alt_event,
+            meet_elevation,
+            gender,
+            elevation_unit=venue_elevation_unit,
+            barometric_pressure_hpa=pb_hpa,
+        )
+        if collect_steps:
+            steps.append(_step_multiplicative("altitude", t, t_after))
+        t = t_after
+
+    if d_reported > 0 and d_actual > 0 and abs(d_actual - d_reported) > 1:
+        t_after = riegel_convert(t, d_actual, d_reported, b)
+        if collect_steps:
+            steps.append(
+                _step_multiplicative(
+                    "actual_distance",
+                    t,
+                    t_after,
+                    note=f"{d_actual:.0f}m → {d_reported:.0f}m",
+                )
+            )
+        t = t_after
+
+    d_target = _resolve_target_distance_m(
+        target_distance_m=target_distance_m,
+        target_distance=target_distance,
+        target_distance_unit=target_distance_unit,
+    )
+    if d_target is not None:
+        t_after = riegel_convert(t, d_actual, d_target, b)
+        if collect_steps:
+            steps.append(
+                _step_multiplicative(
+                    "target_distance",
+                    t,
+                    t_after,
+                    note=f"{d_actual:.0f}m → {d_target:.0f}m",
+                )
+            )
+        t = t_after
+
+    if collect_steps:
+        return t, steps
+    return t
+
+
 def standardize_xc(
     time: float | int | str,
     *,
@@ -210,66 +337,202 @@ def standardize_xc(
 
     ``sport_name`` is not a parameter here; set it on :class:`RaceContext` when using
     :func:`standardize_seconds`. This function does not apply track wind or venue factors.
-    """
-    cfg = config or StandardizeConfig()
-    validate_standardize_gender(gender)
-    validate_distance_unit(distance_unit)
-    validate_distance_unit(target_distance_unit)
-    validate_temp_unit(temp_unit)
-    validate_venue_elevation_unit(venue_elevation_unit)
-    validate_grade_input(grade_input)
 
-    t = _resolve_time(time)
-    d_reported, d_actual = _resolve_xc_distances(
+    See :func:`standardize_xc_detail` for a step-by-step breakdown.
+    """
+    result = _standardize_xc_core(
+        time,
+        gender=gender,
         reported_distance_m=reported_distance_m,
         actual_distance_m=actual_distance_m,
         reported_distance=reported_distance,
         actual_distance=actual_distance,
         distance_unit=distance_unit,
+        temperature=temperature,
+        dew_point=dew_point,
+        elevation_gain=elevation_gain,
+        elevation_loss=elevation_loss,
+        meet_elevation=meet_elevation,
+        barometric_pressure=barometric_pressure,
+        barometric_pressure_hpa=barometric_pressure_hpa,
+        event_name=event_name,
+        temp_unit=temp_unit,
+        venue_elevation_unit=venue_elevation_unit,
+        grade_input=grade_input,
+        course_distance_m=course_distance_m,
+        apply_weather=apply_weather,
+        apply_elevation_grade=apply_elevation_grade,
+        apply_meet_altitude_correction=apply_meet_altitude_correction,
+        target_distance_m=target_distance_m,
+        target_distance=target_distance,
+        target_distance_unit=target_distance_unit,
+        config=config,
+        collect_steps=False,
     )
+    assert isinstance(result, float)
+    return result
 
-    b = cfg.riegel_b(gender)
 
-    if apply_weather:
-        temp_f = temperature_to_fahrenheit(temperature, temp_unit)
-        dew_f = temperature_to_fahrenheit(dew_point, temp_unit)
-        t *= weather_factor(temp_f, dew_f, k=cfg.heat_k)
+def standardize_xc_detail(
+    time: float | int | str,
+    *,
+    gender: str,
+    reported_distance_m: float | None = None,
+    actual_distance_m: float | None = None,
+    reported_distance: float | int | str | None = None,
+    actual_distance: float | int | str | None = None,
+    distance_unit: DistanceUnit = "m",
+    temperature: float | None = None,
+    dew_point: float | None = None,
+    elevation_gain: float | None = None,
+    elevation_loss: float | None = None,
+    meet_elevation: float | None = None,
+    barometric_pressure: float | None = None,
+    barometric_pressure_hpa: float | None = None,
+    event_name: str | None = None,
+    temp_unit: TemperatureUnit = "F",
+    venue_elevation_unit: VenueElevationUnit = "ft",
+    grade_input: GradeInput = "percent",
+    course_distance_m: float | None = None,
+    apply_weather: bool = True,
+    apply_elevation_grade: bool = True,
+    apply_meet_altitude_correction: bool = True,
+    target_distance_m: float | None = None,
+    target_distance: float | int | str | None = None,
+    target_distance_unit: DistanceUnit = "m",
+    config: StandardizeConfig | None = None,
+) -> StandardizeDetail:
+    """Like :func:`standardize_xc`, returning each pipeline step."""
+    raw = _resolve_time(time)
+    result = _standardize_xc_core(
+        time,
+        gender=gender,
+        reported_distance_m=reported_distance_m,
+        actual_distance_m=actual_distance_m,
+        reported_distance=reported_distance,
+        actual_distance=actual_distance,
+        distance_unit=distance_unit,
+        temperature=temperature,
+        dew_point=dew_point,
+        elevation_gain=elevation_gain,
+        elevation_loss=elevation_loss,
+        meet_elevation=meet_elevation,
+        barometric_pressure=barometric_pressure,
+        barometric_pressure_hpa=barometric_pressure_hpa,
+        event_name=event_name,
+        temp_unit=temp_unit,
+        venue_elevation_unit=venue_elevation_unit,
+        grade_input=grade_input,
+        course_distance_m=course_distance_m,
+        apply_weather=apply_weather,
+        apply_elevation_grade=apply_elevation_grade,
+        apply_meet_altitude_correction=apply_meet_altitude_correction,
+        target_distance_m=target_distance_m,
+        target_distance=target_distance,
+        target_distance_unit=target_distance_unit,
+        config=config,
+        collect_steps=True,
+    )
+    assert isinstance(result, tuple)
+    std_sec, steps = result
+    return StandardizeDetail(raw_sec=raw, std_sec=std_sec, steps=tuple(steps))
 
-    if apply_elevation_grade:
-        t = apply_course_grade_factor(
-            t,
-            elevation_gain,
-            elevation_loss,
-            course_distance_m=course_distance_m or d_actual,
-            grade_input=grade_input,
-            config=cfg,
-        )
+
+def _standardize_result_core(
+    time: float | int | str,
+    *,
+    gender: str,
+    event_name: str,
+    sport_name: str,
+    temperature: float | None = None,
+    dew_point: float | None = None,
+    elevation_gain: float | None = None,
+    elevation_loss: float | None = None,
+    meet_elevation: float | None = None,
+    barometric_pressure: float | None = None,
+    barometric_pressure_hpa: float | None = None,
+    lap_length_m: float | None = None,
+    banked: bool | str | None = None,
+    wind_mps: float | None = None,
+    temp_unit: TemperatureUnit = "F",
+    venue_elevation_unit: VenueElevationUnit = "ft",
+    grade_input: GradeInput = "percent",
+    course_distance_m: float | None = None,
+    apply_course_grade: bool = True,
+    config: StandardizeConfig | None = None,
+    collect_steps: bool = False,
+) -> float | tuple[float, list[StandardizeStep]]:
+    cfg = config or StandardizeConfig()
+    validate_standardize_gender(gender)
+    validate_temp_unit(temp_unit)
+    validate_venue_elevation_unit(venue_elevation_unit)
+    validate_grade_input(grade_input)
+
+    steps: list[StandardizeStep] = []
+    t = _resolve_time(time)
+
+    t_after = apply_wind(t, event_name, gender, wind_mps, sport_name, config=cfg)
+    if collect_steps:
+        note = f"wind {wind_mps} m/s" if wind_mps is not None else None
+        steps.append(_step_additive("wind", t, t_after, note=note))
+    t = t_after
+
+    temp_f = temperature_to_fahrenheit(temperature, temp_unit)
+    dew_f = temperature_to_fahrenheit(dew_point, temp_unit)
+    wf = weather_factor(temp_f, dew_f, k=cfg.heat_k)
+    t_after = t * wf
+    if collect_steps:
+        steps.append(_step_multiplicative("weather", t, t_after))
+    t = t_after
+
+    if apply_course_grade and (elevation_gain is not None or elevation_loss is not None):
+        d_course = course_distance_m
+        if d_course is None:
+            d_course = parse_event_distance_m(event_name)
+        if d_course is not None and d_course > 0:
+            t_after = apply_course_grade_factor(
+                t,
+                elevation_gain,
+                elevation_loss,
+                course_distance_m=d_course,
+                grade_input=grade_input,
+                config=cfg,
+            )
+            if collect_steps:
+                steps.append(_step_multiplicative("grade", t, t_after))
+            t = t_after
+
+    tvf = track_venue_factor(
+        event_name,
+        gender,
+        lap_length_m=lap_length_m,
+        banked=banked,
+        sport_name=sport_name,
+        config=cfg,
+    )
+    t_after = t * tvf
+    if collect_steps:
+        steps.append(_step_multiplicative("track_venue", t, t_after))
+    t = t_after
 
     pb_hpa = barometric_pressure_hpa_from_record(
         {"barometric_pressure": barometric_pressure, "barometric_pressure_hpa": barometric_pressure_hpa}
     )
-    if apply_meet_altitude_correction and meet_elevation is not None:
-        alt_event = event_name or f"{int(d_reported)}m"
-        t = apply_meet_altitude(
+    if meet_elevation is not None:
+        t_after = apply_meet_altitude(
             t,
-            alt_event,
+            event_name,
             meet_elevation,
             gender,
             elevation_unit=venue_elevation_unit,
             barometric_pressure_hpa=pb_hpa,
         )
+        if collect_steps:
+            steps.append(_step_multiplicative("altitude", t, t_after))
+        t = t_after
 
-    if d_reported > 0 and d_actual > 0 and abs(d_actual - d_reported) > 1:
-        t = riegel_convert(t, d_actual, d_reported, b)
-
-    d_target = _resolve_target_distance_m(
-        target_distance_m=target_distance_m,
-        target_distance=target_distance,
-        target_distance_unit=target_distance_unit,
-    )
-    if d_target is not None:
-        t = riegel_convert(t, d_actual, d_target, b)
-
+    if collect_steps:
+        return t, steps
     return t
 
 
@@ -321,58 +584,87 @@ def standardize_result(
     elevation_gain / elevation_loss (road and XC-style courses; % grade default),
     meet_elevation (venue altitude ft), lap_length_m, banked, wind_mps,
     grade_input, course_distance_m (defaults from event_name distance), config.
+
+    See :func:`standardize_result_detail` for a step-by-step breakdown.
     """
-    cfg = config or StandardizeConfig()
-    validate_standardize_gender(gender)
-    validate_temp_unit(temp_unit)
-    validate_venue_elevation_unit(venue_elevation_unit)
-    validate_grade_input(grade_input)
-
-    t = _resolve_time(time)
-    t = apply_wind(t, event_name, gender, wind_mps, sport_name, config=cfg)
-
-    temp_f = temperature_to_fahrenheit(temperature, temp_unit)
-    dew_f = temperature_to_fahrenheit(dew_point, temp_unit)
-    t *= weather_factor(temp_f, dew_f, k=cfg.heat_k)
-
-    if apply_course_grade and (elevation_gain is not None or elevation_loss is not None):
-        d_course = course_distance_m
-        if d_course is None:
-            d_course = parse_event_distance_m(event_name)
-        if d_course is not None and d_course > 0:
-            t = apply_course_grade_factor(
-                t,
-                elevation_gain,
-                elevation_loss,
-                course_distance_m=d_course,
-                grade_input=grade_input,
-                config=cfg,
-            )
-
-    t = apply_track_venue(
-        t,
-        event_name,
-        gender,
+    result = _standardize_result_core(
+        time,
+        gender=gender,
+        event_name=event_name,
+        sport_name=sport_name,
+        temperature=temperature,
+        dew_point=dew_point,
+        elevation_gain=elevation_gain,
+        elevation_loss=elevation_loss,
+        meet_elevation=meet_elevation,
+        barometric_pressure=barometric_pressure,
+        barometric_pressure_hpa=barometric_pressure_hpa,
         lap_length_m=lap_length_m,
         banked=banked,
+        wind_mps=wind_mps,
+        temp_unit=temp_unit,
+        venue_elevation_unit=venue_elevation_unit,
+        grade_input=grade_input,
+        course_distance_m=course_distance_m,
+        apply_course_grade=apply_course_grade,
+        config=config,
+        collect_steps=False,
+    )
+    assert isinstance(result, float)
+    return result
+
+
+def standardize_result_detail(
+    time: float | int | str,
+    *,
+    gender: str,
+    event_name: str,
+    sport_name: str,
+    temperature: float | None = None,
+    dew_point: float | None = None,
+    elevation_gain: float | None = None,
+    elevation_loss: float | None = None,
+    meet_elevation: float | None = None,
+    barometric_pressure: float | None = None,
+    barometric_pressure_hpa: float | None = None,
+    lap_length_m: float | None = None,
+    banked: bool | str | None = None,
+    wind_mps: float | None = None,
+    temp_unit: TemperatureUnit = "F",
+    venue_elevation_unit: VenueElevationUnit = "ft",
+    grade_input: GradeInput = "percent",
+    course_distance_m: float | None = None,
+    apply_course_grade: bool = True,
+    config: StandardizeConfig | None = None,
+) -> StandardizeDetail:
+    """Like :func:`standardize_result`, returning each pipeline step."""
+    raw = _resolve_time(time)
+    result = _standardize_result_core(
+        time,
+        gender=gender,
+        event_name=event_name,
         sport_name=sport_name,
-        config=cfg,
+        temperature=temperature,
+        dew_point=dew_point,
+        elevation_gain=elevation_gain,
+        elevation_loss=elevation_loss,
+        meet_elevation=meet_elevation,
+        barometric_pressure=barometric_pressure,
+        barometric_pressure_hpa=barometric_pressure_hpa,
+        lap_length_m=lap_length_m,
+        banked=banked,
+        wind_mps=wind_mps,
+        temp_unit=temp_unit,
+        venue_elevation_unit=venue_elevation_unit,
+        grade_input=grade_input,
+        course_distance_m=course_distance_m,
+        apply_course_grade=apply_course_grade,
+        config=config,
+        collect_steps=True,
     )
-
-    pb_hpa = barometric_pressure_hpa_from_record(
-        {"barometric_pressure": barometric_pressure, "barometric_pressure_hpa": barometric_pressure_hpa}
-    )
-    if meet_elevation is not None:
-        t = apply_meet_altitude(
-            t,
-            event_name,
-            meet_elevation,
-            gender,
-            elevation_unit=venue_elevation_unit,
-            barometric_pressure_hpa=pb_hpa,
-        )
-
-    return t
+    assert isinstance(result, tuple)
+    std_sec, steps = result
+    return StandardizeDetail(raw_sec=raw, std_sec=std_sec, steps=tuple(steps))
 
 
 def standardize_road(
@@ -387,7 +679,7 @@ def standardize_road(
 
     Same weather, grade, and altitude corrections as :func:`standardize_xc`, but
     distance comes from ``event_name`` and there is **no Riegel target step**.
-    XC targets. Use :func:`standardize_xc` for cross country.
+    Use :func:`standardize_xc` for cross country.
     """
     kwargs.pop("sport_name", None)
     return standardize_result(
@@ -513,6 +805,104 @@ def standardize_seconds(ctx: RaceContext) -> float:
 
     if ctx.event_name and ctx.sport_name:
         return standardize_result(
+            t,
+            gender=ctx.gender,
+            event_name=ctx.event_name,
+            sport_name=ctx.sport_name,
+            temperature=ctx.temperature,
+            dew_point=ctx.dew_point,
+            meet_elevation=ctx.meet_elevation,
+            barometric_pressure=ctx.barometric_pressure,
+            barometric_pressure_hpa=ctx.barometric_pressure_hpa,
+            lap_length_m=ctx.lap_length_m,
+            banked=ctx.banked,
+            wind_mps=ctx.wind_mps,
+            elevation_gain=ctx.elevation_gain,
+            elevation_loss=ctx.elevation_loss,
+            grade_input=ctx.grade_input,
+            course_distance_m=ctx.course_distance_m,
+            temp_unit=ctx.temp_unit,
+            venue_elevation_unit=ctx.venue_elevation_unit,
+            config=ctx.config,
+        )
+
+    raise ValueError(
+        "cannot standardize RaceContext: for XC set reported_distance_m, reported_distance, "
+        "or event_name with sport_name='Cross Country'; for road/outdoor/indoor track set "
+        "event_name and sport_name (or use standardize_road / standardize_outdoor_track / "
+        "standardize_indoor_track directly)"
+    )
+
+
+def standardize_seconds_detail(ctx: RaceContext) -> StandardizeDetail:
+    """Like :func:`standardize_seconds`, returning each pipeline step."""
+    validate_standardize_gender(ctx.gender)
+    t = ctx.time_sec
+    if t is None and ctx.time_str is not None:
+        t = parse_time(ctx.time_str)
+    if t is None:
+        raise ValueError("time is required: set time_sec or time_str on RaceContext")
+
+    use_xc = isinstance(ctx, XCRaceContext) or (
+        ctx.reported_distance_m is not None
+        or ctx.reported_distance is not None
+        or (is_cross_country(ctx.sport_name) and ctx.event_name)
+    )
+
+    if use_xc:
+        xc_kwargs: dict = {
+            "reported_distance_m": ctx.reported_distance_m,
+            "actual_distance_m": ctx.actual_distance_m,
+            "reported_distance": ctx.reported_distance,
+            "actual_distance": ctx.actual_distance,
+            "distance_unit": ctx.distance_unit,
+        }
+        if isinstance(ctx, XCRaceContext):
+            d_rep = ctx.reported_or_event_m()
+            if d_rep is not None:
+                xc_kwargs["reported_distance_m"] = d_rep
+                xc_kwargs["actual_distance_m"] = ctx.actual_or_reported_m()
+                xc_kwargs["reported_distance"] = None
+                xc_kwargs["actual_distance"] = None
+        elif xc_kwargs["reported_distance_m"] is None and xc_kwargs["reported_distance"] is None and ctx.event_name:
+            parsed = parse_event_distance_m(ctx.event_name)
+            if parsed is not None:
+                xc_kwargs["reported_distance_m"] = parsed
+
+        has_xc_distance = (
+            xc_kwargs["reported_distance_m"] is not None
+            or xc_kwargs["reported_distance"] is not None
+        )
+        if has_xc_distance:
+            return standardize_xc_detail(
+                t,
+                gender=ctx.gender,
+                temperature=ctx.temperature,
+                dew_point=ctx.dew_point,
+                elevation_gain=ctx.elevation_gain,
+                elevation_loss=ctx.elevation_loss,
+                meet_elevation=ctx.meet_elevation,
+                barometric_pressure=ctx.barometric_pressure,
+                barometric_pressure_hpa=ctx.barometric_pressure_hpa,
+                event_name=ctx.event_name,
+                temp_unit=ctx.temp_unit,
+                venue_elevation_unit=ctx.venue_elevation_unit,
+                grade_input=ctx.grade_input,
+                course_distance_m=ctx.course_distance_m,
+                target_distance_m=ctx.target_distance_m,
+                target_distance=ctx.target_distance,
+                target_distance_unit=ctx.target_distance_unit,
+                config=ctx.config,
+                **xc_kwargs,
+            )
+        if is_cross_country(ctx.sport_name) or isinstance(ctx, XCRaceContext):
+            raise ValueError(
+                "cannot resolve XC distance: set reported_distance_m, reported_distance "
+                "(e.g. '5k'), or an event_name that parses to meters"
+            )
+
+    if ctx.event_name and ctx.sport_name:
+        return standardize_result_detail(
             t,
             gender=ctx.gender,
             event_name=ctx.event_name,

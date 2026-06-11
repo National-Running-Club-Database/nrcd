@@ -53,6 +53,14 @@ def parse_time(time_str: str | float | int | None) -> float:
 
 
 def format_time(seconds: float) -> str:
+    """Format seconds as a clock string (``MM:SS.cc`` or ``H:MM:SS.cc``).
+
+    Returns
+    -------
+    str
+        Clock string for non-negative finite ``seconds``. Returns ``""`` for
+        negative, NaN, or infinite input (does not raise).
+    """
     if not math.isfinite(seconds) or seconds < 0:
         return ""
     hours = int(seconds // 3600)

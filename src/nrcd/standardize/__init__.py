@@ -55,14 +55,26 @@ from nrcd.standardize.grade import (
     apply_course_grade_factor,
     warn_one_sided_course_grade,
 )
+from nrcd.standardize.batch import (
+    COLUMN_ALIASES,
+    DataframeBatchResult,
+    enrich_dataframe,
+    resolve_column_map,
+    row_to_race_context,
+    standardize_dataframe,
+)
+from nrcd.standardize.detail import StandardizeDetail, StandardizeStep
 from nrcd.standardize.pipeline import (
     apply_factors,
     standardize_indoor_track,
     standardize_outdoor_track,
     standardize_result,
+    standardize_result_detail,
     standardize_road,
     standardize_seconds,
+    standardize_seconds_detail,
     standardize_xc,
+    standardize_xc_detail,
 )
 from nrcd.standardize.reference import (
     PARAMETER_SPECS,
@@ -99,12 +111,16 @@ from nrcd.standardize.units import (
 )
 
 __all__ = [
+    "COLUMN_ALIASES",
+    "DataframeBatchResult",
     "DistanceUnit",
     "GradeInput",
     "PARAMETERS_DOC",
     "PARAMETER_SPECS",
     "ParameterSpec",
     "RaceContext",
+    "StandardizeDetail",
+    "StandardizeStep",
     "StandardizeConfig",
     "TemperatureUnit",
     "VenueElevationUnit",
@@ -116,6 +132,7 @@ __all__ = [
     "barometric_pressure_torr_from_hpa",
     "c_to_f",
     "distance_to_meters",
+    "enrich_dataframe",
     "elevation_factor",
     "f_to_c",
     "feet_to_meters",
@@ -137,7 +154,9 @@ __all__ = [
     "pipeline_kind",
     "required_for",
     "resolve_grade_percent",
+    "resolve_column_map",
     "resolve_meet_altitude_inputs",
+    "row_to_race_context",
     "temperature_to_fahrenheit",
     "venue_elevation_to_feet",
     "warn_one_sided_course_grade",
@@ -145,12 +164,16 @@ __all__ = [
     "riegel_convert",
     "riegel_exponent",
     "sea_level_time_seconds",
+    "standardize_dataframe",
     "standardize_indoor_track",
     "standardize_outdoor_track",
     "standardize_result",
+    "standardize_result_detail",
     "standardize_road",
     "standardize_seconds",
+    "standardize_seconds_detail",
     "standardize_xc",
+    "standardize_xc_detail",
     "weather_factor",
     "xc_target_distance_m",
 ]

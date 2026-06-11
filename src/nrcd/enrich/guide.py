@@ -76,6 +76,6 @@ Caching and throttling (nrcd.enrich defaults)
   • TTL cache: only within one Python process / one batch script run (not shared across users).
     Helps when many rows share the same city/state. Single one-off lookups do not benefit.
   • TimeZoneDB: minimum 1.5s between requests (EnrichConfig.timezone_min_interval_sec).
-  • Batch CLI: scripts/enrich_api.py --parallel N (default 1). Results print one-by-one as
-    each job finishes; failures are recorded without stopping the run.
+  • Batch enrichment: run_enrich_jobs() with EnrichJob callables (parallel=1 by default).
+    Each job returns a JobResult; failures are recorded without stopping the run.
 """

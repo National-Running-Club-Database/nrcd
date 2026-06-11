@@ -19,7 +19,7 @@ Times can be **seconds** or clock strings (`"22:15"`, `"4:12.00"`, `"10.52"`). X
 **Cross country — 5K in 22:15, target distance 8000m**
 
 ```python
-from nrcd import format_time, standardize_xc
+from nrcd.standardize import format_time, standardize_xc
 
 std = standardize_xc(
     "22:15",
@@ -37,7 +37,7 @@ print(format_time(std))
 **Cross country — 8 km with weather, grade, altitude, target distance 8000m**
 
 ```python
-from nrcd import format_time, standardize_xc
+from nrcd.standardize import format_time, standardize_xc
 
 std = standardize_xc(
     "27:30",
@@ -59,7 +59,7 @@ print(format_time(std))
 **Outdoor track — 100m with wind**
 
 ```python
-from nrcd import standardize_outdoor_track
+from nrcd.standardize import standardize_outdoor_track
 
 std = standardize_outdoor_track(
     "13.52",
@@ -74,7 +74,7 @@ print(f"{std:.3f} s")
 **Indoor track — 200m on a banked 200m oval**
 
 ```python
-from nrcd import standardize_indoor_track
+from nrcd.standardize import standardize_indoor_track
 
 std = standardize_indoor_track(
     "21.80",
@@ -90,7 +90,7 @@ print(f"{std:.3f} s")
 **Road — half marathon with weather and grade**
 
 ```python
-from nrcd import format_time, standardize_road
+from nrcd.standardize import format_time, standardize_road
 
 std = standardize_road(
     "1:25:30",
@@ -117,6 +117,64 @@ print(format_time(std))
 
 
 `standardize_result` remains available when you need a custom `sport_name` string.
+
+**Factor breakdown** — see why a time changed (weather, grade, altitude, wind, Riegel):
+
+```python
+from nrcd.standardize import format_time, standardize_xc_detail
+
+detail = standardize_xc_detail(
+    "27:30",
+    gender="M",
+    reported_distance=8,
+    distance_unit="km",
+    temperature=72,
+    dew_point=65,
+    elevation_gain=2.5,
+    elevation_loss=2.5,
+    meet_elevation=5200,
+    target_distance_m=8000,
+)
+print(format_time(detail.std_sec))
+for step in detail.steps:
+    print(step.name, step.factor, step.note or "")
+# weather 0.98…  |  grade 1.02…  |  altitude …  |  target_distance … (8000m → 8000m)
+```
+
+Use `standardize_result_detail` for track/road (includes **wind** on outdoor sprints) or
+`standardize_seconds_detail(ctx)` from a `RaceContext`.
+
+**Batch** — standardize many rows (`pip install "nrcd[data]"`):
+
+```python
+from nrcd.standardize import standardize_dataframe
+
+out = standardize_dataframe(df)  # adds std_time_sec
+out = standardize_dataframe(df, detail=True)  # also std_detail per row
+
+# Backfill weather/altitude then standardize (pip install "nrcd[data,apis]")
+out = standardize_dataframe(df, enrich=True)
+```
+
+Column names map to `RaceContext` fields automatically (`result_time` → `time_str`,
+`altitude` → `meet_elevation`, `meet_city` → `city`, etc.).
+Override with `column_map={"time_str": "result_time"}`.
+
+Rows at the same meet (same city/date/start time) share the enrich cache — 100 results
+trigger one weather API lookup, not 100. Or enrich only:
+
+```python
+from nrcd.standardize import enrich_dataframe
+
+df = enrich_dataframe(df, fetch_altitude=False)  # weather only
+
+# Track API calls (cache misses only; same meet → one OpenWeather lookup)
+from nrcd.standardize import DataframeBatchResult, enrich_dataframe
+
+result = enrich_dataframe(df, return_usage=True)
+assert isinstance(result, DataframeBatchResult)
+print(result.api_usage.to_dict())  # openweather_geocode, openweather_timemachine, openweather_total, …
+```
 
 **Unit switches** (optional kwargs on all pipelines):
 
@@ -249,16 +307,25 @@ Full parameter tables: `from nrcd import PARAMETERS_DOC` or `help(nrcd.standardi
 
 ### Entry points
 
+Quick start and examples import pipelines from `nrcd.standardize`. The same
+`standardize_*` helpers are also on top-level `nrcd`; utilities like `format_time`
+stay on `nrcd.standardize` only.
 
-| Function                    | Use for                                                                 |
-| --------------------------- | ----------------------------------------------------------------------- |
-| `standardize_xc`            | Cross country — optional target distance (`target_distance_m`, `target_distance` + unit, or `"8k"`) |
-| `standardize_road`          | Road / marathon — `event_name`; weather, grade, altitude                |
-| `standardize_outdoor_track` | Outdoor track — `event_name`; wind on sprints                           |
-| `standardize_indoor_track`  | Indoor track — `event_name`; lap length / banking                       |
-| `standardize_result`        | Low-level — any `sport_name` (advanced)                                 |
-| `standardize_seconds`       | Dispatch from a `RaceContext` / `XCRaceContext` row                     |
-| `enrich_race_context`       | Fill missing weather/altitude on a context (`pip install "nrcd[apis]"`) |
+
+| Function                    | Import from        | Use for                                                                 |
+| --------------------------- | ------------------ | ----------------------------------------------------------------------- |
+| `standardize_xc`            | `nrcd` or `.standardize` | Cross country — optional target distance (`target_distance_m`, `target_distance` + unit, or `"8k"`) |
+| `standardize_road`          | `nrcd` or `.standardize` | Road / marathon — `event_name`; weather, grade, altitude                |
+| `standardize_outdoor_track` | `nrcd` or `.standardize` | Outdoor track — `event_name`; wind on sprints                           |
+| `standardize_indoor_track`  | `nrcd` or `.standardize` | Indoor track — `event_name`; lap length / banking                       |
+| `standardize_result`        | `nrcd` or `.standardize` | Low-level — any `sport_name` (advanced)                                 |
+| `standardize_seconds`       | `nrcd` or `.standardize` | Dispatch from a `RaceContext` / `XCRaceContext` row                     |
+| `standardize_xc_detail`     | `.standardize`     | XC pipeline with per-step breakdown (`StandardizeDetail`)               |
+| `standardize_result_detail` | `.standardize`     | Track/road pipeline with breakdown (wind, weather, grade, …)          |
+| `standardize_seconds_detail`| `.standardize`     | Breakdown from a `RaceContext` row                                      |
+| `standardize_dataframe`     | `.standardize`     | Batch rows → `std_time_sec`; optional ``enrich=True`` (`nrcd[data,apis]`) |
+| `enrich_dataframe`          | `.standardize`     | Batch backfill weather/altitude on rows (cache dedupes per meet)        |
+| `enrich_race_context`       | `nrcd.enrich`      | Fill missing weather/altitude on a context (`pip install "nrcd[apis]"`) |
 
 
 ### `nrcd.standardize` — pipelines & context
@@ -268,6 +335,11 @@ Full parameter tables: `from nrcd import PARAMETERS_DOC` or `help(nrcd.standardi
 | ---------------------------------------------------------------- | ---------------------------------------------------------------- |
 | `RaceContext`                                                    | Dataclass for one result (XC or track); `time_str` or `time_sec` |
 | `XCRaceContext`                                                  | XC-focused `RaceContext` subclass                                |
+| `StandardizeDetail`                                              | `raw_sec`, `std_sec`, and ordered `steps` from a `*_detail` call |
+| `StandardizeStep`                                                | One step: `name`, `factor`, `delta_sec`, `time_before_sec`, …     |
+| `row_to_race_context`                                            | Build `RaceContext` from one DataFrame row                         |
+| `resolve_column_map`                                             | Map `RaceContext` fields → DataFrame columns                       |
+| `COLUMN_ALIASES`                                                 | Default NRCD column aliases (`result_time`, `altitude`, …)         |
 | `StandardizeConfig`                                              | Paper coefficients (Riegel exponents, heat k, grade bases, …)    |
 | `PARAMETERS_DOC`                                                 | Full required/optional parameter reference (text)                |
 | `PARAMETER_SPECS`                                                | Same metadata as structured `ParameterSpec` tuples               |
@@ -281,7 +353,7 @@ Full parameter tables: `from nrcd import PARAMETERS_DOC` or `help(nrcd.standardi
 | Name                               | Description                                                       |
 | ---------------------------------- | ----------------------------------------------------------------- |
 | `parse_time`                       | `"22:15"`, `"1:10:13"`, or seconds → float seconds                |
-| `format_time`                      | Seconds → clock string                                            |
+| `format_time`                      | Seconds → clock string; returns ``""`` for negative/NaN/inf         |
 | `parse_distance`                   | `"5k"`, `8`, `"8000m"` + unit → meters                            |
 | `distance_to_meters`               | Numeric distance with `distance_unit` (`m` / `km` / `mi`)         |
 | `c_to_f`, `f_to_c`                 | Temperature conversion                                            |
@@ -360,6 +432,8 @@ Dataset (if using Zenodo export): [![Zenodo dataset](https://img.shields.io/badg
 ```bash
 pytest
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests, and pull request guidelines.
 
 See [![Changelog](https://img.shields.io/badge/Changelog-CHANGELOG.md-blue)](CHANGELOG.md). Package version: [![src/nrcd/__init__.py](https://img.shields.io/badge/version-src%2Fnrcd%2F__init__.py-lightgrey)](src/nrcd/__init__.py) (`__version__`).
 
