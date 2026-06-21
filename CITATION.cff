@@ -29,8 +29,12 @@ preferred-citation:
   type: article
   title: "NRCD: An Open Database of Collegiate Running with Unified Performance Standardization"
   year: 2026
-  notes: "arXiv preprint forthcoming"
+  url: "https://jonathankarr.com/documents/nrcd_cikm_submission_with_appendix.pdf"
+  notes: "Preprint PDF (not yet officially published); arXiv preprint forthcoming"
 identifiers:
+  - type: url
+    value: "https://jonathankarr.com/documents/nrcd_cikm_submission_with_appendix.pdf"
+    description: "NRCD paper preprint"
   - type: url
     value: "https://zenodo.org/records/17917357"
     description: "NRCD dataset export (optional)"

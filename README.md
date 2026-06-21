@@ -1,6 +1,6 @@
 # nrcd
 
-Python library for **[National Running Club Database (NRCD)](https://github.com/National-Running-Club-Database/nrcd)** performance standardization (cross country, track, road race). Implements the formulas documented in the NRCD resource paper.
+Python library for **[National Running Club Database (NRCD)](https://github.com/National-Running-Club-Database/nrcd)** performance standardization (cross country, track, road race). Implements the formulas documented in the [NRCD paper preprint](https://jonathankarr.com/documents/nrcd_cikm_submission_with_appendix.pdf) (not yet officially published; arXiv preprint forthcoming).
 
 [![GitHub](https://img.shields.io/badge/GitHub-National--Running--Club--Database%2Fnrcd-181717?logo=github)](https://github.com/National-Running-Club-Database/nrcd)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue?logo=python&logoColor=white)](https://www.python.org/downloads/)
@@ -418,7 +418,7 @@ stay on `nrcd.standardize` only.
 
 > **NRCD: An Open Database of Collegiate Running with Unified Performance Standardization**  
 > Jonathan A. Karr Jr, Ryan M. Fryer, Ben Darden, Nicholas Pell, Kayla Ambrose, Evan Hall, Ramzi K. Bualuan, and Nitesh V. Chawla.  
-> arXiv preprint (forthcoming).
+> [Preprint PDF](https://jonathankarr.com/documents/nrcd_cikm_submission_with_appendix.pdf) (not yet officially published). arXiv preprint (forthcoming).
 
 Dataset (if using Zenodo export): [![Zenodo dataset](https://img.shields.io/badge/Zenodo-NRCD%20dataset-1682D4?logo=zenodo)](https://zenodo.org/records/17917357)
 

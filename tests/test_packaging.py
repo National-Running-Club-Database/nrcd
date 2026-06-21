@@ -3,6 +3,7 @@
 import subprocess
 import sys
 import tarfile
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -38,6 +39,22 @@ def test_sdist_includes_examples(tmp_path):
         names = archive.getnames()
     assert any(name.startswith("nrcd-") and "/examples/" in name for name in names)
     assert any(name.endswith("examples/xc_examples.py") for name in names)
+    assert any("/src/nrcd/__init__.py" in name for name in names)
+
+
+def test_wheel_includes_package_code(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    subprocess.run(
+        [sys.executable, "-m", "build", "-o", str(tmp_path)],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    wheel = next(tmp_path.glob("*.whl"))
+    with zipfile.ZipFile(wheel) as archive:
+        py_files = [n for n in archive.namelist() if n.endswith(".py")]
+    assert any(n.startswith("nrcd/") for n in py_files)
+    assert "nrcd/__init__.py" in py_files
 
 
 def test_data_import_without_pandas():

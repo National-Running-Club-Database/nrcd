@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "nrcd"
 dynamic = ["version"]
-description = "NRCD performance standardization formulas (cross country, track, road)"
+description = "Standardize cross country, track, and road-race times with NRCD formulas (weather, grade, altitude, distance, indoor track, and more)."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
@@ -31,11 +31,6 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Topic :: Scientific/Engineering",
 ]
-
-[tool.hatch.build.targets.sdist]
-include = [
-  "/examples",
-]
 dependencies = []
 
 [project.optional-dependencies]
@@ -52,6 +47,12 @@ Dataset = "https://zenodo.org/records/17917357"
 
 [tool.hatch.version]
 path = "src/nrcd/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/src",
+  "/examples",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/nrcd"]

@@ -22,4 +22,17 @@ jobs:
           pip install build twine
           python -m build
           twine check dist/*
+      - name: Verify wheel contains package code
+        run: |
+          python - <<'PY'
+          import glob
+          import sys
+          import zipfile
+
+          wheel = next(glob.glob("dist/*.whl"))
+          names = zipfile.ZipFile(wheel).namelist()
+          if "nrcd/__init__.py" not in names:
+              print("Wheel is missing nrcd package code:", names)
+              sys.exit(1)
+          PY
       - uses: pypa/gh-action-pypi-publish@release/v1

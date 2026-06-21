@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.3] - 2026-06-21
+
+- **Fix PyPI wheel** — 0.1.2 shipped an empty wheel (sdist omitted `src/`); restore package code in sdist/wheel builds
+- Add packaging test and publish-workflow check that the wheel contains `nrcd/`
+- Update PyPI short description and list preprint paper
+
 ## [0.1.2] - 2026-06-11
 
 - Fix README Quick start imports (`format_time` from `nrcd.standardize`, not `nrcd`)
@@ -36,6 +42,7 @@ Initial release.
 - `nrcd.data` — Zenodo CSV helpers (`pip install "nrcd[data]"`)
 - Examples, docs, and tests
 
+[0.1.3]: https://github.com/National-Running-Club-Database/nrcd/releases/tag/v0.1.3
 [0.1.2]: https://github.com/National-Running-Club-Database/nrcd/releases/tag/v0.1.2
 [0.1.1]: https://github.com/National-Running-Club-Database/nrcd/releases/tag/v0.1.1
 [0.1.0]: https://github.com/National-Running-Club-Database/nrcd/releases/tag/v0.1.0
