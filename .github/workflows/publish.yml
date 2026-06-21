@@ -29,7 +29,7 @@ jobs:
           import sys
           import zipfile
 
-          wheel = next(glob.glob("dist/*.whl"))
+          wheel = glob.glob("dist/*.whl")[0]
           names = zipfile.ZipFile(wheel).namelist()
           if "nrcd/__init__.py" not in names:
               print("Wheel is missing nrcd package code:", names)
