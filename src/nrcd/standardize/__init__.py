@@ -92,6 +92,13 @@ from nrcd.standardize.sport import (
     pipeline_kind,
 )
 from nrcd.standardize.time import format_time, parse_time
+from nrcd.standardize.track import (
+    TRACK_VENUE_REFERENCES,
+    compare_venue_references,
+    default_venue_reference,
+    resolve_venue_reference,
+    venue_reference_factor_table,
+)
 from nrcd.standardize.units import (
     DistanceUnit,
     GradeInput,
@@ -113,6 +120,7 @@ from nrcd.standardize.units import (
 __all__ = [
     "COLUMN_ALIASES",
     "DataframeBatchResult",
+    "TRACK_VENUE_REFERENCES",
     "DistanceUnit",
     "GradeInput",
     "PARAMETERS_DOC",
@@ -131,6 +139,8 @@ __all__ = [
     "barometric_pressure_hpa_from_record",
     "barometric_pressure_torr_from_hpa",
     "c_to_f",
+    "compare_venue_references",
+    "default_venue_reference",
     "distance_to_meters",
     "enrich_dataframe",
     "elevation_factor",
@@ -156,9 +166,11 @@ __all__ = [
     "resolve_grade_percent",
     "resolve_column_map",
     "resolve_meet_altitude_inputs",
+    "resolve_venue_reference",
     "row_to_race_context",
     "temperature_to_fahrenheit",
     "venue_elevation_to_feet",
+    "venue_reference_factor_table",
     "warn_one_sided_course_grade",
     "peronnet_f_alt",
     "riegel_convert",

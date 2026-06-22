@@ -54,7 +54,7 @@ def test_readme_indoor_track_200m():
         lap_length_m=200,
         banked=True,
     )
-    assert f"{std:.3f} s" == "22.588 s"
+    assert f"{std:.3f} s" == "21.800 s"
 
 
 def test_readme_road_half_marathon():

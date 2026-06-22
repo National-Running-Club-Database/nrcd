@@ -15,8 +15,9 @@ Entry points (one per sport)
     altitude. **Required:** ``time``, ``gender``, ``event_name``.
 
 ``standardize_indoor_track``
-    Indoor track. Lap length / banked venue factors, weather, grade, meet altitude.
-    Wind is ignored. **Required:** ``time``, ``gender``, ``event_name``.
+    Indoor track. NCAA facility indexing (undersized / flat / banked-oversized),
+    weather, grade, meet altitude. Wind is ignored.
+    **Required:** ``time``, ``gender``, ``event_name``.
 
 ``standardize_result``
     Low-level path when you supply ``sport_name`` yourself (custom NRCD strings).
@@ -464,6 +465,7 @@ def _standardize_result_core(
     grade_input: GradeInput = "percent",
     course_distance_m: float | None = None,
     apply_course_grade: bool = True,
+    venue_reference: str | None = None,
     config: StandardizeConfig | None = None,
     collect_steps: bool = False,
 ) -> float | tuple[float, list[StandardizeStep]]:
@@ -513,11 +515,20 @@ def _standardize_result_core(
         lap_length_m=lap_length_m,
         banked=banked,
         sport_name=sport_name,
+        venue_reference=venue_reference,
         config=cfg,
     )
     t_after = t * tvf
     if collect_steps:
-        steps.append(_step_multiplicative("track_venue", t, t_after))
+        from nrcd.standardize.sport import is_indoor_track
+        from nrcd.standardize.track import resolve_venue_reference
+
+        ref_name = resolve_venue_reference(
+            venue_reference,
+            indoor=is_indoor_track(sport_name),
+        )
+        note = f"reference={ref_name}" if tvf != 1.0 else f"reference={ref_name} (unity)"
+        steps.append(_step_multiplicative("track_venue", t, t_after, note=note))
     t = t_after
 
     pb_hpa = barometric_pressure_hpa_from_record(
@@ -562,6 +573,7 @@ def standardize_result(
     grade_input: GradeInput = "percent",
     course_distance_m: float | None = None,
     apply_course_grade: bool = True,
+    venue_reference: str | None = None,
     config: StandardizeConfig | None = None,
 ) -> float:
     """Low-level pipeline: wind → weather → course grade → track venue → meet altitude.
@@ -580,14 +592,16 @@ def standardize_result(
     ``sport_name`` controls which steps run:
 
     - **Outdoor Track** (contains ``outdoor`` and ``track``): sprint wind when ``wind_mps`` set.
-    - **Indoor Track** (contains ``indoor``): ``lap_length_m`` / ``banked`` venue factors; no wind.
+    - **Indoor Track** (contains ``indoor``): NCAA track type from ``lap_length_m`` /
+      ``banked``; reference = banked/oversized; no wind.
     - **Road** (contains ``road`` or ``marathon``): weather, grade, altitude only.
 
     Optional
     --------
     temperature + dew_point (both required for weather step),
     elevation_gain / elevation_loss (road and XC-style courses; % grade default),
-    meet_elevation (venue altitude ft), lap_length_m, banked, wind_mps,
+    meet_elevation (venue altitude ft),     lap_length_m, banked, wind_mps,
+    venue_reference (``banked_oversized`` | ``indoor_flat`` | ``outdoor_flat_400m``),
     grade_input, course_distance_m (defaults from event_name distance), config.
 
     See :func:`standardize_result_detail` for a step-by-step breakdown.
@@ -612,6 +626,7 @@ def standardize_result(
         grade_input=grade_input,
         course_distance_m=course_distance_m,
         apply_course_grade=apply_course_grade,
+        venue_reference=venue_reference,
         config=config,
         collect_steps=False,
     )
@@ -640,6 +655,7 @@ def standardize_result_detail(
     grade_input: GradeInput = "percent",
     course_distance_m: float | None = None,
     apply_course_grade: bool = True,
+    venue_reference: str | None = None,
     config: StandardizeConfig | None = None,
 ) -> StandardizeDetail:
     """Like :func:`standardize_result`, returning each pipeline step."""
@@ -664,6 +680,7 @@ def standardize_result_detail(
         grade_input=grade_input,
         course_distance_m=course_distance_m,
         apply_course_grade=apply_course_grade,
+        venue_reference=venue_reference,
         config=config,
         collect_steps=True,
     )
@@ -703,11 +720,12 @@ def standardize_outdoor_track(
     event_name: str,
     **kwargs: object,
 ) -> float:
-    """Outdoor track: wind → weather → grade → meet altitude.
+    """Outdoor track: wind → weather → grade → venue → meet altitude.
 
     Sprint wind applies when ``wind_mps`` is set and ``event_name`` is a sprint
-    (≤400 m). Indoor venue and wind corrections never run here — use
-    :func:`standardize_indoor_track` for indoor meets.
+    (≤400 m). Default venue reference is outdoor 400 m flat; pass
+    ``venue_reference`` to compare to NCAA banked/oversized or indoor flat.
+    Use :func:`~nrcd.standardize.compare_venue_references` for all refs at once.
     """
     kwargs.pop("sport_name", None)
     return standardize_result(
@@ -726,10 +744,13 @@ def standardize_indoor_track(
     event_name: str,
     **kwargs: object,
 ) -> float:
-    """Indoor track: weather → grade → lap/bank venue → meet altitude.
+    """Indoor track: weather → grade → NCAA venue → meet altitude.
 
-    ``lap_length_m`` and ``banked`` control NCAA venue factors. Wind is ignored
-    even if passed. Use :func:`standardize_outdoor_track` for outdoor meets.
+    ``lap_length_m`` and ``banked`` select NCAA track type (undersized / flat /
+    banked-oversized). Default reference is banked/oversized; pass
+    ``venue_reference`` (``indoor_flat`` | ``outdoor_flat_400m``) to compare or
+    override. Use :func:`~nrcd.standardize.compare_venue_references` for all refs
+    at once. Wind is ignored even if passed.
     """
     kwargs.pop("sport_name", None)
     return standardize_result(
@@ -822,6 +843,7 @@ def standardize_seconds(ctx: RaceContext) -> float:
             lap_length_m=ctx.lap_length_m,
             banked=ctx.banked,
             wind_mps=ctx.wind_mps,
+            venue_reference=ctx.venue_reference,
             elevation_gain=ctx.elevation_gain,
             elevation_loss=ctx.elevation_loss,
             grade_input=ctx.grade_input,
@@ -920,6 +942,7 @@ def standardize_seconds_detail(ctx: RaceContext) -> StandardizeDetail:
             lap_length_m=ctx.lap_length_m,
             banked=ctx.banked,
             wind_mps=ctx.wind_mps,
+            venue_reference=ctx.venue_reference,
             elevation_gain=ctx.elevation_gain,
             elevation_loss=ctx.elevation_loss,
             grade_input=ctx.grade_input,

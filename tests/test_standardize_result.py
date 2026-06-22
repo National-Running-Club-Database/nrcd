@@ -15,7 +15,8 @@ def test_indoor_venue_factor():
         lap_length_m=200,
         banked=True,
     )
-    assert std > raw
+    # Banked 200 m → 400 m standard: lap + banking factors net to ~1.
+    assert std == pytest.approx(raw)
 
 
 def test_wind_outdoor_only():

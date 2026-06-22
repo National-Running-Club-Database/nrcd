@@ -71,7 +71,7 @@ print(f"{std:.3f} s")
 # → 13.630 s
 ```
 
-**Indoor track — 200m on a banked 200m oval**
+**Indoor track — 200m on a banked 200m oval (NCAA reference venue)**
 
 ```python
 from nrcd.standardize import standardize_indoor_track
@@ -84,7 +84,33 @@ std = standardize_indoor_track(
     banked=True,
 )
 print(f"{std:.3f} s")
-# → 22.588 s
+# → 21.800 s  (banked 200 m is the NCAA indexing reference)
+
+# 200 m flat indoor converts to that reference (faster std):
+std_flat = standardize_indoor_track(
+    "22.97",
+    gender="M",
+    event_name="200m",
+    lap_length_m=200,
+    banked=False,
+)
+print(f"{std_flat:.3f} s")
+# → 22.565 s  (× 0.9824 NCAA flat-to-banked factor for men)
+
+# Compare all venue references (same weather/grade/altitude):
+from nrcd.standardize import compare_venue_references
+
+refs = compare_venue_references(
+    "22.97",
+    gender="M",
+    event_name="200m",
+    sport_name="Indoor Track",
+    lap_length_m=200,
+    banked=False,
+)
+# refs["banked_oversized"] ≈ 22.565
+# refs["indoor_flat"] == 22.97
+# refs["outdoor_flat_400m"] == 22.97  (cross-sport flat heuristic)
 ```
 
 **Road — half marathon with weather and grade**
@@ -113,10 +139,49 @@ print(format_time(std))
 | Cross country | `standardize_xc`            | Weather, grade, altitude; optional **Riegel** to a target distance (e.g. 8000m)       |
 | Road          | `standardize_road`          | Same weather / grade / altitude as XC; distance from `event_name`; **no Riegel target** |
 | Outdoor track | `standardize_outdoor_track` | Sprint **wind**, weather, grade, altitude                                               |
-| Indoor track  | `standardize_indoor_track`  | **Lap/bank venue** factors; no wind                                                     |
+| Indoor track  | `standardize_indoor_track`  | **Lap/bank venue** factors; no wind; optional `venue_reference` |
 
 
 `standardize_result` remains available when you need a custom `sport_name` string.
+
+#### Track venue references
+
+Choose what “standard” means for track results instead of relying only on sport defaults:
+
+| Reference | Typical use |
+| --------- | ----------- |
+| `banked_oversized` | Indoor default — NCAA championship banked/oversized oval |
+| `indoor_flat` | 200 m flat indoor (no banking credit) |
+| `outdoor_flat_400m` | Outdoor default — 400 m flat outdoor lap; also cross-sport “flat” heuristic for indoor |
+
+**Compare within sport (recommended)** — indoor vs indoor or outdoor vs outdoor:
+
+```python
+from nrcd.standardize import compare_venue_references, venue_reference_factor_table
+
+# Full std times under each reference (weather/grade/altitude applied once per ref):
+refs = compare_venue_references(
+    "22.97", gender="M", event_name="200m", sport_name="Indoor Track",
+    lap_length_m=200, banked=False,
+)
+
+# Venue-only NCAA factors (no weather):
+factors = venue_reference_factor_table(
+    "200m", "M", lap_length_m=200, banked=False, sport_name="Indoor Track",
+)
+```
+
+**Explicit reference** on a single call:
+
+```python
+standardize_indoor_track("22.97", gender="M", event_name="200m",
+    lap_length_m=200, banked=False, venue_reference="indoor_flat")  # raw time unchanged
+
+standardize_outdoor_track("10.52", gender="M", event_name="100m",
+    lap_length_m=400, venue_reference="banked_oversized")  # outdoor → NCAA banked ref
+```
+
+**Cross-sport “fair” time** — `outdoor_flat_400m` on indoor is a heuristic (flat indoor ≈ flat outdoor); there is no NCAA indoor→outdoor factor in the literature. Banked indoor → flat uses published NCAA factors (e.g. men 200 m × 1.0179 to `indoor_flat`); that is still not an outdoor 400 m conversion.
 
 **Factor breakdown** — see why a time changed (weather, grade, altitude, wind, Riegel):
 
@@ -316,8 +381,10 @@ stay on `nrcd.standardize` only.
 | --------------------------- | ------------------ | ----------------------------------------------------------------------- |
 | `standardize_xc`            | `nrcd` or `.standardize` | Cross country — optional target distance (`target_distance_m`, `target_distance` + unit, or `"8k"`) |
 | `standardize_road`          | `nrcd` or `.standardize` | Road / marathon — `event_name`; weather, grade, altitude                |
-| `standardize_outdoor_track` | `nrcd` or `.standardize` | Outdoor track — `event_name`; wind on sprints                           |
-| `standardize_indoor_track`  | `nrcd` or `.standardize` | Indoor track — `event_name`; lap length / banking                       |
+| `standardize_outdoor_track` | `nrcd` or `.standardize` | Outdoor track — wind on sprints; optional `venue_reference` |
+| `standardize_indoor_track`  | `nrcd` or `.standardize` | Indoor track — lap length / banking; optional `venue_reference` |
+| `compare_venue_references`  | `nrcd` or `.standardize` | Track — std time under each venue reference |
+| `venue_reference_factor_table` | `.standardize`     | Track — venue-only NCAA factors per reference |
 | `standardize_result`        | `nrcd` or `.standardize` | Low-level — any `sport_name` (advanced)                                 |
 | `standardize_seconds`       | `nrcd` or `.standardize` | Dispatch from a `RaceContext` / `XCRaceContext` row                     |
 | `standardize_xc_detail`     | `.standardize`     | XC pipeline with per-step breakdown (`StandardizeDetail`)               |

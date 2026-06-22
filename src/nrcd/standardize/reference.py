@@ -199,17 +199,27 @@ PARAMETER_SPECS: tuple[ParameterSpec, ...] = (
         "lap_length_m",
         "conditional",
         "meters",
-        "Indoor/oversized track lap length for NCAA f_len.",
+        "Indoor lap length — infers NCAA track type (undersized / flat / banked-oversized).",
         ("venue", "track"),
-        "Needed for non-standard indoor tracks; outdoor 400 m lap → factor 1.0.",
+        "< 200 m undersized; 200 m flat or banked; > 200 m oversized (NCAA reference). "
+        "Outdoor 400 m lap → factor 1.0.",
     ),
     ParameterSpec(
         "banked",
         "optional",
         "bool or string",
-        "Banked indoor track for NCAA f_bank.",
+        "200 m lap banking — flat vs banked/oversized NCAA category.",
         ("venue", "track"),
-        "Only applies when sport_name is indoor track.",
+        "Only when sport_name is indoor track and lap_length_m ≈ 200 m.",
+    ),
+    ParameterSpec(
+        "venue_reference",
+        "optional",
+        "str",
+        "Target track venue for standardization.",
+        ("venue", "track"),
+        "banked_oversized (indoor default), indoor_flat, outdoor_flat_400m "
+        "(outdoor default). Use compare_venue_references() to compare all.",
     ),
     ParameterSpec(
         "wind_mps",
@@ -303,7 +313,17 @@ REQUIRED by pipeline
     event_name          e.g. "100m", "Mile" — wind on sprints when wind_mps set.
 
   Indoor track (standardize_indoor_track)
-    event_name          e.g. "200m", "Mile" — lap_length_m / banked venue factors; no wind.
+    event_name          e.g. "200m", "Mile" — NCAA facility indexing; no wind.
+    lap_length_m        < 200 m undersized; 200 m flat/banked; > 200 m oversized.
+    banked              On 200 m laps: flat vs banked/oversized (NCAA reference).
+    venue_reference     banked_oversized (default), indoor_flat, outdoor_flat_400m.
+
+  Outdoor track (standardize_outdoor_track)
+    venue_reference     outdoor_flat_400m (default), banked_oversized, indoor_flat.
+
+  Compare references
+    compare_venue_references(time, ...)  → dict of std times per reference
+    venue_reference_factor_table(...)    → venue-only factors (no weather)
 
   Low-level (standardize_result)
     event_name, sport_name   Use sport-specific helpers above when possible.
@@ -316,7 +336,7 @@ OPTIONAL (step skipped if missing)
   elevation_gain/loss   Course grade % (XC + road); warns if only gain or only loss.
   meet_elevation        Meet altitude (venue); default unit feet — not gain/loss.
   barometric_pressure    OpenWeather race-time pressure (hPa); only with meet_elevation (refines rho).
-  lap_length_m, banked  Indoor track venue (with Indoor Track sport).
+  lap_length_m, banked, venue_reference  Indoor/outdoor NCAA track venue.
   wind_mps              Outdoor track sprints only.
   config                Override paper coefficients.
 
@@ -338,7 +358,7 @@ StandardizeConfig coefficients
   elevation_gain_base=1.04   Maurer uphill
   elevation_loss_base=0.9633 Maurer downhill
   wind_max_mps=4.0           Wind clamp; linear scale from 2 m/s reference tables
-  track_outdoor_reference_lap_m=400
+  track_outdoor_reference_lap_m=400   Outdoor flat lap; indoor NCAA ref is banked/oversized
 
 Entry points (NRCD sport names)
 -------------------------------

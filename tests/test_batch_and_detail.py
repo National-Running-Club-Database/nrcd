@@ -17,6 +17,40 @@ from nrcd.standardize import (
 )
 
 
+def test_standardize_result_detail_track_venue_reference_note():
+    detail = standardize_result_detail(
+        22.97,
+        gender="M",
+        event_name="200m",
+        sport_name="Indoor Track",
+        lap_length_m=200,
+        banked=False,
+        venue_reference="indoor_flat",
+    )
+    venue = next(s for s in detail.steps if s.name == "track_venue")
+    assert venue.note is not None
+    assert "indoor_flat" in venue.note
+
+
+def test_standardize_dataframe_indoor_venue_reference_column():
+    pd = pytest.importorskip("pandas")
+    df = pd.DataFrame(
+        [
+            {
+                "time_str": "22.97",
+                "gender": "M",
+                "event_name": "200m",
+                "sport_name": "Indoor Track",
+                "lap_length_m": 200,
+                "banked": False,
+                "venue_reference": "indoor_flat",
+            },
+        ]
+    )
+    out = standardize_dataframe(df)
+    assert out["std_time_sec"].iloc[0] == pytest.approx(22.97)
+
+
 def test_standardize_xc_detail_matches_standardize_xc():
     kwargs = dict(
         gender="M",

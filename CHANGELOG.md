@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.4] - 2026-06-11
+
+- **Indoor track venue** — align with NCAA facility indexing: discrete track types
+  (undersized / flat / banked-oversized); default reference = banked/oversized
+- **`venue_reference`** — choose target venue: `banked_oversized`, `indoor_flat`,
+  `outdoor_flat_400m` (sport-specific defaults when omitted)
+- **`compare_venue_references()`** — std times under multiple references at once
+- **`venue_reference_factor_table()`** — venue-only NCAA factors per reference
+- **Batch / detail** — `venue_reference` on `RaceContext` and DataFrame rows
+  (`track_reference` alias); `track_venue` step notes the resolved reference
+- **Exports** — `compare_venue_references`, `venue_reference_factor_table`,
+  `TRACK_VENUE_REFERENCES` on top-level `nrcd` and `nrcd.standardize`
+
 ## [0.1.3] - 2026-06-21
 
 - **Fix PyPI wheel** — 0.1.2 shipped an empty wheel (sdist omitted `src/`); restore package code in sdist/wheel builds
@@ -42,6 +55,7 @@ Initial release.
 - `nrcd.data` — Zenodo CSV helpers (`pip install "nrcd[data]"`)
 - Examples, docs, and tests
 
+[0.1.4]: https://github.com/National-Running-Club-Database/nrcd/releases/tag/v0.1.4
 [0.1.3]: https://github.com/National-Running-Club-Database/nrcd/releases/tag/v0.1.3
 [0.1.2]: https://github.com/National-Running-Club-Database/nrcd/releases/tag/v0.1.2
 [0.1.1]: https://github.com/National-Running-Club-Database/nrcd/releases/tag/v0.1.1

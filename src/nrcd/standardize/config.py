@@ -27,7 +27,8 @@ class StandardizeConfig:
     wind_max_mps : float
         Absolute wind clamp when applying outdoor sprint corrections.
     track_outdoor_reference_lap_m : float
-        Standard outdoor lap (400 m); no length factor when lap matches.
+        Standard outdoor flat lap (400 m). Indoor indexing uses NCAA banked/oversized
+        championship reference, not outdoor lap length.
     default_temp_unit, default_venue_elevation_unit, default_grade_input
         Documented input defaults; pass explicitly on functions if not using
         :class:`~nrcd.standardize.context.RaceContext`.

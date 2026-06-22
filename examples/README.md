@@ -15,7 +15,7 @@ Runnable scripts — **no NRCD Zenodo download** required except `load_dataset_e
 | Script | What it shows |
 |--------|----------------|
 | [`track_outdoor_examples.py`](track_outdoor_examples.py) | 100m wind, hurdles, 400m–10K, weather, altitude, course grade |
-| [`track_indoor_examples.py`](track_indoor_examples.py) | Lap length, banked vs flat, wind ignored indoors |
+| [`track_indoor_examples.py`](track_indoor_examples.py) | NCAA track types: undersized, flat 200 m, banked/oversized reference |
 | [`track_compare_meets.py`](track_compare_meets.py) | Same raw time across meets (wind, heat, altitude) |
 
 ## Both / advanced

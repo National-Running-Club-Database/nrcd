@@ -102,6 +102,8 @@ class RaceContext:
     # --- optional: track venue (indoor sport + lap_length_m / banked) ---
     lap_length_m: float | None = None
     banked: bool | str | None = None
+    venue_reference: str | None = None
+    """Track venue reference: ``banked_oversized``, ``indoor_flat``, ``outdoor_flat_400m``."""
 
     # --- optional: outdoor track wind (m/s, tailwind positive) ---
     wind_mps: float | None = None
