@@ -8,12 +8,10 @@ Python library for **[National Running Club Database (NRCD)](https://github.com/
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/National-Running-Club-Database/nrcd/actions/workflows/ci.yml/badge.svg)](https://github.com/National-Running-Club-Database/nrcd/actions/workflows/ci.yml)
 
-[![Preprint PDF](https://img.shields.io/badge/Preprint-PDF-E74C3C?logo=adobeacrobatreader&logoColor=white)](https://jonathankarr.com/documents/nrcd_cikm_submission_with_appendix.pdf)
 [![Zenodo dataset v2.0.0](https://img.shields.io/badge/Zenodo-v2.0.0-1682D4?logo=zenodo)](https://zenodo.org/records/20578527)
 
-**NRCD: An Open Database of Collegiate Running with Unified Performance Standardization**  
-Jonathan A. Karr Jr, Ryan M. Fryer, Ben Darden, Nicholas Pell, Kayla Ambrose, Evan Hall, Ramzi K. Bualuan, and Nitesh V. Chawla  
-*(preprint — arXiv forthcoming)*
+**[NRCD: An Open Database of Collegiate Running with Unified Performance Standardization](https://jonathankarr.com/documents/nrcd_cikm_submission_with_appendix.pdf)** *(preprint — arXiv forthcoming)*  
+Jonathan A. Karr Jr, Ryan M. Fryer, Ben Darden, Nicholas Pell, Kayla Ambrose, Evan Hall, Ramzi K. Bualuan, and Nitesh V. Chawla
 
 Use this to **standardize your own race results** — no NRCD dataset download required.
 
@@ -492,7 +490,8 @@ stay on `nrcd.standardize` only.
 
 > **NRCD: An Open Database of Collegiate Running with Unified Performance Standardization**  
 > Jonathan A. Karr Jr, Ryan M. Fryer, Ben Darden, Nicholas Pell, Kayla Ambrose, Evan Hall, Ramzi K. Bualuan, and Nitesh V. Chawla.  
-> *(preprint — arXiv forthcoming)*
+> *(preprint — arXiv forthcoming)*  
+> https://jonathankarr.com/documents/nrcd_cikm_submission_with_appendix.pdf
 
 Dataset (if using Zenodo export): [![Zenodo dataset v2.0.0](https://img.shields.io/badge/Zenodo-v2.0.0-1682D4?logo=zenodo)](https://zenodo.org/records/20578527) · [doi:10.5281/zenodo.20578527](https://doi.org/10.5281/zenodo.20578527)
 
