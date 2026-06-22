@@ -43,7 +43,7 @@ Homepage = "https://github.com/National-Running-Club-Database/nrcd"
 Repository = "https://github.com/National-Running-Club-Database/nrcd"
 Documentation = "https://github.com/National-Running-Club-Database/nrcd#readme"
 "Bug Tracker" = "https://github.com/National-Running-Club-Database/nrcd/issues"
-Dataset = "https://zenodo.org/records/17917357"
+Dataset = "https://zenodo.org/records/20578527"
 
 [tool.hatch.version]
 path = "src/nrcd/__init__.py"

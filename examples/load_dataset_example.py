@@ -23,7 +23,7 @@ def main() -> None:
     if missing:
         print("WARNING: NRCD Zenodo CSVs not found — this example cannot run.", file=sys.stderr)
         print("  The nrcd package does NOT require this dataset.", file=sys.stderr)
-        print("  Download: https://zenodo.org/records/17917357", file=sys.stderr)
+        print("  Download: https://zenodo.org/records/20578527", file=sys.stderr)
         print("  Requires: pip install \"nrcd[data]\"", file=sys.stderr)
         print("  Or run: python examples/compare_improvement.py", file=sys.stderr)
         sys.exit(1)
