@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.4] - 2026-06-11
+## [0.1.4] - 2026-06-22
 
 - **Indoor track venue** — align with NCAA facility indexing: discrete track types
   (undersized / flat / banked-oversized); default reference = banked/oversized

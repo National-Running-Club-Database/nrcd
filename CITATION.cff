@@ -3,7 +3,7 @@ title: "nrcd: NRCD performance standardization library"
 message: "If you use this software or the NRCD standardization formulas, please cite the paper."
 type: software
 version: 0.1.4
-date-released: 2026-06-11
+date-released: 2026-06-22
 license: MIT
 repository-code: "https://github.com/National-Running-Club-Database/nrcd"
 url: "https://github.com/National-Running-Club-Database/nrcd"
