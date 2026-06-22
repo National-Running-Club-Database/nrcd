@@ -2,8 +2,8 @@
 
 from nrcd.standardize import (
     PARAMETERS_DOC,
-    RaceContext,
     TRACK_VENUE_REFERENCES,
+    RaceContext,
     XCRaceContext,
     compare_venue_references,
     standardize_indoor_track,
