@@ -26,6 +26,17 @@ def test_py_typed_marker():
     assert (root / "src" / "nrcd" / "py.typed").is_file()
 
 
+def test_ruff_check():
+    root = Path(__file__).resolve().parents[1]
+    subprocess.run(
+        [sys.executable, "-m", "ruff", "check", "src", "tests", "examples"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
 def test_sdist_includes_examples(tmp_path):
     root = Path(__file__).resolve().parents[1]
     subprocess.run(

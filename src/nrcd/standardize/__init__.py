@@ -101,14 +101,6 @@ from nrcd.standardize.track import (
     resolve_venue_reference,
     venue_reference_factor_table,
 )
-from nrcd.standardize.unstandardize import (
-    unstandardize_indoor_track,
-    unstandardize_outdoor_track,
-    unstandardize_result,
-    unstandardize_road,
-    unstandardize_seconds,
-    unstandardize_xc,
-)
 from nrcd.standardize.units import (
     DistanceUnit,
     GradeInput,
@@ -125,6 +117,14 @@ from nrcd.standardize.units import (
     resolve_grade_percent,
     temperature_to_fahrenheit,
     venue_elevation_to_feet,
+)
+from nrcd.standardize.unstandardize import (
+    unstandardize_indoor_track,
+    unstandardize_outdoor_track,
+    unstandardize_result,
+    unstandardize_road,
+    unstandardize_seconds,
+    unstandardize_xc,
 )
 
 __all__ = [

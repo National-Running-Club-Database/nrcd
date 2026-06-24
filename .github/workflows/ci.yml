@@ -34,7 +34,8 @@ jobs:
             examples/track_compare_meets.py \
             examples/compare_improvement.py \
             examples/race_context_example.py \
-            examples/standardize_one_result.py; do
+            examples/standardize_one_result.py \
+            examples/unstandardize_examples.py; do
             python "$script"
           done
           # load_dataset_example.py requires optional Zenodo CSVs (pip install "nrcd[data]")
