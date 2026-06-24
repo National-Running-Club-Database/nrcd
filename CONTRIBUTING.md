@@ -22,7 +22,7 @@ pip install -e ".[dev,data]"   # Zenodo CSV example
 ## Running tests
 
 ```bash
-pytest
+pytest -m "not live_api"   # same as CI (skips optional live OpenWeather tests)
 ruff check src tests examples
 ```
 
