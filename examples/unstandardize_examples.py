@@ -32,13 +32,13 @@ def main() -> None:
     show("Past meet — raw", 26 * 60 + 40)
     show("Std fitness level", std)
 
-    upcoming_hot = dict(**race, temperature=85, dew_point=70)
+    upcoming_hot = {**race, "temperature": 85, "dew_point": 70}
     show("Upcoming meet — hot forecast", unstandardize_xc(std, **upcoming_hot))
 
-    upcoming_flat = dict(**race, elevation_gain=50, elevation_loss=50)
+    upcoming_flat = {**race, "elevation_gain": 50, "elevation_loss": 50}
     show("Upcoming meet — flatter course", unstandardize_xc(std, **upcoming_flat))
 
-    upcoming_low = dict(**race, meet_elevation=500)
+    upcoming_low = {**race, "meet_elevation": 500}
     show("Upcoming meet — low altitude (500 ft)", unstandardize_xc(std, **upcoming_low))
 
     show("Round-trip (same meet as std)", unstandardize_xc(std, **race))

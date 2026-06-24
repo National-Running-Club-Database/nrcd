@@ -236,13 +236,13 @@ race = dict(
 std = standardize_xc("26:40", **race)
 
 # Upcoming meet: hot forecast, same 8K distance
-upcoming = dict(**race, temperature=85, dew_point=70)
+upcoming = {**race, "temperature": 85, "dew_point": 70}
 predicted = unstandardize_xc(std, **upcoming)
 print(format_time(predicted))
 # → 28:01.14
 
 # Different course at the same meet (flatter 50 ft gain/loss)
-flatter = dict(**race, elevation_gain=50, elevation_loss=50)
+flatter = {**race, "elevation_gain": 50, "elevation_loss": 50}
 print(format_time(unstandardize_xc(std, **flatter)))
 # → 26:43.91
 ```
