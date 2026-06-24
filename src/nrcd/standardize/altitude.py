@@ -249,6 +249,33 @@ def sea_level_time_seconds(
     )
 
 
+def meet_altitude_factor(
+    event_name: str | None,
+    meet_elevation: float | None,
+    gender: str,
+    *,
+    elevation_unit: VenueElevationUnit = "ft",
+    barometric_pressure_hpa: float | None = None,
+) -> float:
+    """Peronnet altitude multiplier for a meet (1.0 when elevation omitted or not applicable)."""
+    if not applies_altitude_conversion(event_name):
+        return 1.0
+    dist = parse_event_distance_m(event_name)
+    if dist is None:
+        return 1.0
+    elev_ft, pb_hpa = resolve_meet_altitude_inputs(
+        meet_elevation,
+        barometric_pressure_hpa,
+        elevation_unit=elevation_unit,
+        warn_on_orphan_pressure=False,
+        stacklevel=4,
+    )
+    if elev_ft is None:
+        return 1.0
+    pb_torr = barometric_pressure_torr_from_hpa(pb_hpa)
+    return peronnet_f_alt(dist, elev_ft, gender, barometric_pressure_torr=pb_torr)
+
+
 def apply_meet_altitude(
     time_sec: float,
     event_name: str | None,
@@ -278,6 +305,11 @@ def apply_meet_altitude(
     )
     if elev_ft is None:
         return time_sec
-    pb_torr = barometric_pressure_torr_from_hpa(pb_hpa)
-    f = peronnet_f_alt(dist, elev_ft, gender, barometric_pressure_torr=pb_torr)
+    f = meet_altitude_factor(
+        event_name,
+        meet_elevation,
+        gender,
+        elevation_unit=elevation_unit,
+        barometric_pressure_hpa=pb_hpa,
+    )
     return float(time_sec) * f

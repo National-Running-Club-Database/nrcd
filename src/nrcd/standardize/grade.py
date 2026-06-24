@@ -46,6 +46,34 @@ def warn_one_sided_course_grade(
         )
 
 
+def course_grade_factor(
+    elevation_gain: float | None,
+    elevation_loss: float | None,
+    *,
+    course_distance_m: float,
+    grade_input: GradeInput = "percent",
+    config: StandardizeConfig | None = None,
+) -> float:
+    """Maurer grade multiplier for a course (1.0 when gain/loss omitted)."""
+    if elevation_gain is None and elevation_loss is None:
+        return 1.0
+    cfg = config or StandardizeConfig()
+    gain_pct, loss_pct = resolve_grade_percent(
+        elevation_gain,
+        elevation_loss,
+        grade_input=grade_input,
+        course_distance_m=course_distance_m,
+    )
+    if gain_pct is None and loss_pct is None:
+        return 1.0
+    return elevation_factor(
+        gain_pct,
+        loss_pct,
+        gain_base=cfg.elevation_gain_base,
+        loss_base=cfg.elevation_loss_base,
+    )
+
+
 def apply_course_grade_factor(
     time_sec: float,
     elevation_gain: float | None,
@@ -63,18 +91,11 @@ def apply_course_grade_factor(
         return time_sec
     if warn_one_sided:
         warn_one_sided_course_grade(elevation_gain, elevation_loss, stacklevel=3)
-    cfg = config or StandardizeConfig()
-    gain_pct, loss_pct = resolve_grade_percent(
+    f = course_grade_factor(
         elevation_gain,
         elevation_loss,
-        grade_input=grade_input,
         course_distance_m=course_distance_m,
+        grade_input=grade_input,
+        config=config,
     )
-    if gain_pct is None and loss_pct is None:
-        return time_sec
-    return time_sec * elevation_factor(
-        gain_pct,
-        loss_pct,
-        gain_base=cfg.elevation_gain_base,
-        loss_base=cfg.elevation_loss_base,
-    )
+    return time_sec * f

@@ -35,6 +35,7 @@ from nrcd.standardize.altitude import (
     apply_meet_altitude,
     barometric_pressure_hpa_from_record,
     barometric_pressure_torr_from_hpa,
+    meet_altitude_factor,
     parse_barometric_pressure_hpa,
     peronnet_f_alt,
     resolve_meet_altitude_inputs,
@@ -62,6 +63,7 @@ from nrcd.standardize.factors import (
 )
 from nrcd.standardize.grade import (
     apply_course_grade_factor,
+    course_grade_factor,
     warn_one_sided_course_grade,
 )
 from nrcd.standardize.pipeline import (
@@ -98,6 +100,14 @@ from nrcd.standardize.track import (
     default_venue_reference,
     resolve_venue_reference,
     venue_reference_factor_table,
+)
+from nrcd.standardize.unstandardize import (
+    unstandardize_indoor_track,
+    unstandardize_outdoor_track,
+    unstandardize_result,
+    unstandardize_road,
+    unstandardize_seconds,
+    unstandardize_xc,
 )
 from nrcd.standardize.units import (
     DistanceUnit,
@@ -140,6 +150,7 @@ __all__ = [
     "barometric_pressure_torr_from_hpa",
     "c_to_f",
     "compare_venue_references",
+    "course_grade_factor",
     "default_venue_reference",
     "distance_to_meters",
     "enrich_dataframe",
@@ -155,6 +166,7 @@ __all__ = [
     "is_indoor_track",
     "is_outdoor_track",
     "is_track",
+    "meet_altitude_factor",
     "meters_to_feet",
     "normalize_sport_name",
     "parameter_specs",
@@ -186,6 +198,12 @@ __all__ = [
     "standardize_seconds_detail",
     "standardize_xc",
     "standardize_xc_detail",
+    "unstandardize_indoor_track",
+    "unstandardize_outdoor_track",
+    "unstandardize_result",
+    "unstandardize_road",
+    "unstandardize_seconds",
+    "unstandardize_xc",
     "weather_factor",
     "xc_target_distance_m",
 ]

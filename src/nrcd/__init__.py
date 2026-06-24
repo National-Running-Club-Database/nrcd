@@ -12,10 +12,12 @@ from nrcd.standardize import (
     standardize_road,
     standardize_seconds,
     standardize_xc,
+    unstandardize_result,
+    unstandardize_xc,
     venue_reference_factor_table,
 )
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 __all__ = [
     "PARAMETERS_DOC",
@@ -29,6 +31,8 @@ __all__ = [
     "standardize_road",
     "standardize_seconds",
     "standardize_xc",
+    "unstandardize_result",
+    "unstandardize_xc",
     "venue_reference_factor_table",
     "__version__",
 ]

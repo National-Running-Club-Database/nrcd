@@ -8,6 +8,7 @@ Runnable scripts — **no NRCD Zenodo download** required except `load_dataset_e
 |--------|----------------|
 | [`standardize_one_result.py`](standardize_one_result.py) | Minimal XC + track; XC uses explicit `target_distance_m` |
 | [`xc_examples.py`](xc_examples.py) | 5K/6K/8mi, clock strings, °F/°C, ft/m altitude, grade %/ft/m |
+| [`unstandardize_examples.py`](unstandardize_examples.py) | Std fitness → expected clock time at an upcoming meet (grade in ft) |
 | [`compare_improvement.py`](compare_improvement.py) | Two meets — raw vs standardized improvement |
 
 ## Track
@@ -30,6 +31,7 @@ Runnable scripts — **no NRCD Zenodo download** required except `load_dataset_e
 ```bash
 pip install -e ".[dev]"
 python examples/xc_examples.py
+python examples/unstandardize_examples.py
 python examples/track_outdoor_examples.py
 python examples/track_indoor_examples.py
 python examples/track_compare_meets.py

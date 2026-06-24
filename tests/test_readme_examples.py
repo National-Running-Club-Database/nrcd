@@ -6,6 +6,7 @@ from nrcd.standardize import (
     standardize_outdoor_track,
     standardize_road,
     standardize_xc,
+    unstandardize_xc,
 )
 
 
@@ -68,3 +69,22 @@ def test_readme_road_half_marathon():
         elevation_loss=1.2,
     )
     assert format_time(std) == "1:25:40.54"
+
+
+def test_readme_unstandardize_xc_grade_feet():
+    race = dict(
+        gender="M",
+        reported_distance_m=8000,
+        elevation_gain=400,
+        elevation_loss=400,
+        grade_input="feet",
+        meet_elevation=5200,
+        target_distance_m=8000,
+        temperature=55,
+        dew_point=48,
+    )
+    std = standardize_xc("26:40", **race)
+    hot = unstandardize_xc(std, **{**race, "temperature": 85, "dew_point": 70})
+    flat = unstandardize_xc(std, **{**race, "elevation_gain": 50, "elevation_loss": 50})
+    assert format_time(hot) == "28:01.14"
+    assert format_time(flat) == "26:43.91"

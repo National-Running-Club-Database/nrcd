@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.5] - 2026-06-24
+
+- **`unstandardize_*`** — convert a std time to expected result time at a meet (weather,
+  grade, altitude, wind, track venue, distance); sport helpers and `unstandardize_seconds`
+- **`course_grade_factor`**, **`meet_altitude_factor`** — expose multipliers used by pipelines
+
 ## [0.1.4] - 2026-06-22
 
 - **Indoor track venue** — align with NCAA facility indexing: discrete track types
@@ -55,6 +61,7 @@ Initial release.
 - `nrcd.data` — Zenodo CSV helpers (`pip install "nrcd[data]"`)
 - Examples, docs, and tests
 
+[0.1.5]: https://github.com/National-Running-Club-Database/nrcd/releases/tag/v0.1.5
 [0.1.4]: https://github.com/National-Running-Club-Database/nrcd/releases/tag/v0.1.4
 [0.1.3]: https://github.com/National-Running-Club-Database/nrcd/releases/tag/v0.1.3
 [0.1.2]: https://github.com/National-Running-Club-Database/nrcd/releases/tag/v0.1.2

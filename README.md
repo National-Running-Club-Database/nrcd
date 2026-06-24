@@ -214,6 +214,44 @@ for step in detail.steps:
 Use `standardize_result_detail` for track/road (includes **wind** on outdoor sprints) or
 `standardize_seconds_detail(ctx)` from a `RaceContext`.
 
+**Unstandardize** — convert a standardized time to the **expected clock time at a meet**
+(past or upcoming): pass that meet's weather, course grade, altitude, wind, and — for track —
+lap length, banking, and venue reference.
+
+```python
+from nrcd.standardize import format_time, standardize_xc, unstandardize_xc
+
+# Past result → std fitness level
+race = dict(
+    gender="M",
+    reported_distance_m=8000,
+    elevation_gain=400,
+    elevation_loss=400,
+    grade_input="feet",       # vertical ft over the course (not % grade)
+    meet_elevation=5200,      # feet (default; use venue_elevation_unit="m" for meters)
+    target_distance_m=8000,
+    temperature=55,
+    dew_point=48,
+)
+std = standardize_xc("26:40", **race)
+
+# Upcoming meet: hot forecast, same 8K distance
+upcoming = dict(**race, temperature=85, dew_point=70)
+predicted = unstandardize_xc(std, **upcoming)
+print(format_time(predicted))
+# → 28:01.14
+
+# Different course at the same meet (flatter 50 ft gain/loss)
+flatter = dict(**race, elevation_gain=50, elevation_loss=50)
+print(format_time(unstandardize_xc(std, **flatter)))
+# → 26:43.91
+```
+
+Track: set ``lap_length_m``, ``banked``, and ``venue_reference`` for the host facility.
+Pass the same ``target_distance_m`` and distance fields used when computing ``std``.
+Sport helpers: `unstandardize_road`, `unstandardize_outdoor_track`, `unstandardize_indoor_track`,
+`unstandardize_seconds(ctx)`.
+
 **Batch** — standardize many rows (`pip install "nrcd[data]"`):
 
 ```python
@@ -263,7 +301,7 @@ Runnable scripts in [examples/](examples/):
 
 |       | Script                                                                                                                                                                                          |
 | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| XC    | [xc_examples.py](examples/xc_examples.py), [compare_improvement.py](examples/compare_improvement.py), [standardize_one_result.py](examples/standardize_one_result.py) |
+| XC    | [xc_examples.py](examples/xc_examples.py), [compare_improvement.py](examples/compare_improvement.py), [standardize_one_result.py](examples/standardize_one_result.py), [unstandardize_examples.py](examples/unstandardize_examples.py) |
 | Track | [track_outdoor_examples.py](examples/track_outdoor_examples.py), [track_indoor_examples.py](examples/track_indoor_examples.py), [track_compare_meets.py](examples/track_compare_meets.py) |
 | Both  | [race_context_example.py](examples/race_context_example.py), [load_dataset_example.py](examples/load_dataset_example.py) |
 
@@ -273,6 +311,7 @@ Runnable scripts in [examples/](examples/):
 ```bash
 pip install nrcd
 python examples/xc_examples.py
+python examples/unstandardize_examples.py
 python examples/track_outdoor_examples.py
 ```
 
@@ -385,7 +424,9 @@ stay on `nrcd.standardize` only.
 | Function                    | Import from        | Use for                                                                 |
 | --------------------------- | ------------------ | ----------------------------------------------------------------------- |
 | `standardize_xc`            | `nrcd` or `.standardize` | Cross country — optional target distance (`target_distance_m`, `target_distance` + unit, or `"8k"`) |
+| `unstandardize_xc`          | `nrcd` or `.standardize` | XC — std time → expected clock time at a meet (weather, grade, altitude) |
 | `standardize_road`          | `nrcd` or `.standardize` | Road / marathon — `event_name`; weather, grade, altitude                |
+| `unstandardize_road`          | `.standardize`     | Road — std time → expected clock time at a meet                         |
 | `standardize_outdoor_track` | `nrcd` or `.standardize` | Outdoor track — wind on sprints; optional `venue_reference` |
 | `standardize_indoor_track`  | `nrcd` or `.standardize` | Indoor track — lap length / banking; optional `venue_reference` |
 | `compare_venue_references`  | `nrcd` or `.standardize` | Track — std time under each venue reference |

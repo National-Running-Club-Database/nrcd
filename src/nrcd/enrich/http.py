@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import time
+import warnings
 
 
 def require_requests():
     try:
-        import requests
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="urllib3 v2 only supports OpenSSL")
+            import requests
     except ImportError as e:
         raise ImportError(
             "nrcd.enrich requires the requests package. Install with: pip install nrcd[apis]"
